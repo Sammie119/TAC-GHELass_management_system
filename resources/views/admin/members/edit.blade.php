@@ -1,0 +1,229 @@
+@extends('layouts.admin')
+@section('page-title', 'Edit Member')
+@section('content')
+
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-800">Edit Member</h2>
+            <p class="text-sm text-gray-400 mt-0.5">{{ $member->full_name }} · {{ $member->member_id_card }}</p>
+        </div>
+        <a href="{{ route('admin.members.show', $member) }}"
+           class="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">
+            ← Back to profile
+        </a>
+    </div>
+
+    @if($errors->any())
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm">
+            <p class="font-medium mb-1">Please fix the following errors:</p>
+            <ul class="list-disc list-inside space-y-0.5">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('admin.members.update', $member) }}"
+          enctype="multipart/form-data">
+        @csrf @method('PUT')
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            {{-- Left: Photo --}}
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 text-center">
+                    <div id="photo-preview" class="mx-auto mb-4">
+                        @if($member->photo)
+                            <img src="{{ Storage::url($member->photo) }}"
+                                 class="w-24 h-24 rounded-full object-cover mx-auto">
+                        @else
+                            <div class="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center
+                                    text-blue-600 font-bold text-2xl mx-auto">
+                                {{ strtoupper(substr($member->first_name,0,1).substr($member->last_name,0,1)) }}
+                            </div>
+                        @endif
+                    </div>
+                    <p class="text-sm font-medium text-gray-700 mb-2">Profile photo</p>
+                    <label class="cursor-pointer">
+                    <span class="text-xs bg-gray-100 border border-gray-300 text-gray-600
+                                 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors">
+                        Change photo
+                    </span>
+                        <input type="file" name="photo" accept="image/*" class="hidden"
+                               onchange="previewPhoto(this)">
+                    </label>
+                    <p class="text-xs text-gray-400 mt-2">JPG, PNG up to 2MB</p>
+
+                    {{-- Member ID & QR --}}
+                    <div class="mt-5 pt-5 border-t border-gray-100">
+                        <p class="text-xs text-gray-400 mb-1">Member ID</p>
+                        <p class="font-mono text-sm font-semibold text-gray-700">{{ $member->member_id_card }}</p>
+                        <a href="{{ route('admin.members.qr', $member) }}"
+                           class="mt-3 inline-block text-xs text-purple-600 hover:underline">
+                            Download QR code →
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Right: Fields --}}
+            <div class="lg:col-span-2 space-y-5">
+
+                <div class="bg-white rounded-xl border border-gray-200 p-6">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-4">Personal information</h3>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                First name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="first_name" value="{{ old('first_name', $member->first_name) }}"
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                                      focus:ring-2 focus:ring-blue-500 focus:outline-none
+                                      @error('first_name') border-red-400 @enderror"
+                                   required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Last name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="last_name" value="{{ old('last_name', $member->last_name) }}"
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                                      focus:ring-2 focus:ring-blue-500 focus:outline-none
+                                      @error('last_name') border-red-400 @enderror"
+                                   required>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                            <input type="text" name="phone" value="{{ old('phone', $member->phone) }}"
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                                      focus:ring-2 focus:ring-blue-500 focus:outline-none
+                                      @error('phone') border-red-400 @enderror">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" name="email" value="{{ old('email', $member->email) }}"
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                                      focus:ring-2 focus:ring-blue-500 focus:outline-none
+                                      @error('email') border-red-400 @enderror">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Date of birth</label>
+                            <input type="date" name="date_of_birth"
+                                   value="{{ old('date_of_birth', $member->date_of_birth ? \Carbon\Carbon::parse($member->date_of_birth)->format('Y-m-d') : '') }}"
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                                      focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                            <select name="gender"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                                       focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <option value="">Select gender</option>
+                                <option value="male"   {{ old('gender', $member->gender) === 'male'   ? 'selected' : '' }}>Male</option>
+                                <option value="female" {{ old('gender', $member->gender) === 'female' ? 'selected' : '' }}>Female</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                            <input type="text" name="address" value="{{ old('address', $member->address) }}"
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                                      focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">TACMS Number</label>
+                            <input type="text" name="tacms_number"
+                                   value="{{ old('tacms_number', $member->tacms_number) }}"
+                                   placeholder="e.g. TAC00ABC010101"
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                                          focus:ring-2 focus:ring-blue-500 focus:outline-none
+                                          @error('tacms_number') border-red-400 @enderror">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Department / Ministry</label>
+                            <select name="department"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                                            focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <option value="">Select department</option>
+                                @foreach(config('departments') as $dept)
+                                    <option value="{{ $dept }}"
+                                        {{ old('department', $member->department) === $dept ? 'selected' : '' }}>
+                                        {{ $dept }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <select name="status"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                                       focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <option value="active"   {{ old('status', $member->status) === 'active'   ? 'selected' : '' }}>Active</option>
+                                <option value="inactive" {{ old('status', $member->status) === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Actions --}}
+                <div class="flex justify-between items-center">
+
+                    {{-- Delete button — completely separate, uses JS to submit its own form --}}
+                    <button type="button"
+                            onclick="document.getElementById('delete-form').submit()"
+                            class="text-sm text-red-500 hover:underline">
+                        Delete this member
+                    </button>
+
+                    <div class="flex gap-3">
+                        <a href="{{ route('admin.members.show', $member) }}"
+                           class="px-5 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                            Cancel
+                        </a>
+                        <button type="submit"
+                                class="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">
+                            Save changes
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </form>
+
+    {{-- Delete form sits OUTSIDE the update form --}}
+    <form id="delete-form"
+          method="POST"
+          action="{{ route('admin.members.destroy', $member) }}"
+          onsubmit="return confirm('Permanently delete {{ $member->full_name }}? This cannot be undone.')">
+        @csrf
+        @method('DELETE')
+    </form>
+
+    <script>
+        function previewPhoto(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('photo-preview').innerHTML =
+                        `<img src="${e.target.result}" class="w-24 h-24 rounded-full object-cover mx-auto">`;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+
+@endsection
