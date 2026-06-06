@@ -157,6 +157,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
             Route::post('/settings/departments',       [SettingsController::class, 'updateDepartments'])->name('settings.departments');
             Route::post('/settings/income-categories', [SettingsController::class, 'updateIncomeCategories'])->name('settings.income-categories');
             Route::post('/settings/expense-categories',[SettingsController::class, 'updateExpenseCategories'])->name('settings.expense-categories');
+            Route::get('/settings/check-sms-balance',  [SettingsController::class, 'checkSMSBalance'])->name('settings.check-sms-balance');
         });
 });
 

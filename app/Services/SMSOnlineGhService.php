@@ -38,7 +38,7 @@ class SMSOnlineGhService
         }
     }
 
-    public function checkSMSBalance()
+    static function checkSMSBalance()
     {
         try {
             // create request object
@@ -54,7 +54,8 @@ class SMSOnlineGhService
             // output the balance
             $balance = $response->getBalance();
 
-            echo "Your balance is: {$balance}.";
+            return $balance;
+//            echo "Your balance is: {$balance}.";
         }
 
         catch (Exception $ex) {

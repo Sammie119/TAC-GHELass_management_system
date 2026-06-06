@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\SMSOnlineGhService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 
@@ -87,5 +88,15 @@ class SettingsController extends Controller
         $content = "<?php\n\nreturn {$export};\n";
         File::put(config_path('finance.php'), $content);
         \Artisan::call('config:clear');
+    }
+
+    public function checkSMSBalance()
+    {
+        $balance = SMSOnlineGhService::checkSMSBalance(); //1250; // Fetch from SMS provider API
+
+        return response()->json([
+            'success' => true,
+            'balance' => $balance
+        ]);
     }
 }
