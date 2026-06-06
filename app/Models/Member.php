@@ -59,4 +59,11 @@ class Member extends Model
     {
         return $this->hasMany(OnlinePayment::class);
     }
+
+    public function cellGroups()
+    {
+        return $this->belongsToMany(CellGroup::class, 'cell_group_members')
+            ->withPivot('joined_date', 'is_leader')
+            ->withTimestamps();
+    }
 }

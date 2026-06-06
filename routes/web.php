@@ -1,12 +1,15 @@
 <?php
 
 use App\Http\Controllers\Admin\AbsenteeController;
+use App\Http\Controllers\Admin\CellGroupController;
 use App\Http\Controllers\Admin\CheckinController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\FinanceController;
 use App\Http\Controllers\Admin\MemberController;
+use App\Http\Controllers\Admin\NewSoulController;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\PledgeController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\UserController;
@@ -56,6 +59,18 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
             Route::get('members-archived',              [MemberController::class, 'archived'])->name('members.archived');
             Route::post('members/{id}/restore',         [MemberController::class, 'restore'])->name('members.restore');
             Route::delete('members/{id}/force-delete',  [MemberController::class, 'forceDelete'])->name('members.force-delete');
+
+            Route::get('/souls',                           [NewSoulController::class, 'index'])->name('souls.index');
+            Route::post('/souls',                          [NewSoulController::class, 'store'])->name('souls.store');
+            Route::get('/souls/{soul}',                    [NewSoulController::class, 'show'])->name('souls.show');
+            Route::post('/souls/{soul}/status',            [NewSoulController::class, 'updateStatus'])->name('souls.status');
+            Route::post('/souls/{soul}/followup',          [NewSoulController::class, 'addFollowup'])->name('souls.followup');
+            Route::get('/souls/{soul}/convert',            [NewSoulController::class, 'convertToMember'])->name('souls.convert');
+            Route::delete('/souls/{soul}',                 [NewSoulController::class, 'destroy'])->name('souls.destroy');
+
+            Route::resource('cells',            CellGroupController::class);
+            Route::post('cells/{cell}/members',            [CellGroupController::class, 'addMember'])->name('cells.members.add');
+            Route::delete('cells/{cell}/members/{member}', [CellGroupController::class, 'removeMember'])->name('cells.members.remove');
         });
 
     // Visitors — admin + membership + usher
@@ -108,6 +123,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
             Route::get('/reports/export/event/{event}/pdf', [ReportController::class, 'exportEventPdf'])->name('reports.export.event.pdf');
             Route::get('/reports/export/absentees/excel',   [ReportController::class, 'exportAbsenteesExcel'])->name('reports.export.absentees.excel');
             Route::get('/reports/export/absentees/pdf',     [ReportController::class, 'exportAbsenteesPdf'])->name('reports.export.absentees.pdf');
+            Route::get('/reports/souls',                    [ReportController::class, 'soulsReport'])->name('reports.souls');
+            Route::get('/reports/souls/export/pdf',         [ReportController::class, 'exportSoulsPdf'])->name('reports.souls.pdf');
+            Route::get('/reports/souls/export/excel',       [ReportController::class, 'exportSoulsExcel'])->name('reports.souls.excel');
         });
 
     // Finance — admin + finance
@@ -132,12 +150,21 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
             Route::post('/finance/upload-excel',                          [FinanceController::class, 'uploadExcel'])->name('finance.upload-excel');
             Route::get('/finance/online-payments',                        [FinanceController::class, 'onlinePayments'])->name('finance.online-payments');
             Route::post('/finance/online-payments/{payment}/confirm',     [FinanceController::class, 'confirmPayment'])->name('finance.payments.confirm');
-            Route::post('/finance/online-payments/{payment}/reject',      [FinanceController::class, 'rejectPayment'])->name('finance.payments.reject');
-            Route::post('/finance/online-payments/bulk-confirm',          [FinanceController::class, 'bulkConfirm'])->name('finance.payments.bulk-confirm');
+//            Route::post('/finance/online-payments/{payment}/reject',      [FinanceController::class, 'rejectPayment'])->name('finance.payments.reject');
+//            Route::post('/finance/online-payments/bulk-confirm',          [FinanceController::class, 'bulkConfirm'])->name('finance.payments.bulk-confirm');
             Route::get('/finance/member-tithes',                          [FinanceController::class, 'memberTithes'])->name('finance.member-tithes');
             Route::get('/finance/report',                                 [FinanceController::class, 'report'])->name('finance.report');
             Route::get('/finance/export/pdf',                             [FinanceController::class, 'exportPdf'])->name('finance.export.pdf');
             Route::get('/finance/export/excel',                           [FinanceController::class, 'exportExcel'])->name('finance.export.excel');
+            Route::get('/finance/sunday-tithes',                          [FinanceController::class, 'sundayTithes'])->name('finance.sunday-tithes');
+            Route::post('/finance/sunday-tithes',                         [FinanceController::class, 'storeSundayTithes'])->name('finance.sunday-tithes.store');
+
+            Route::get('/pledges',                                        [PledgeController::class, 'index'])->name('pledges.index');
+            Route::post('/pledges',                                       [PledgeController::class, 'store'])->name('pledges.store');
+            Route::get('/pledges/{pledge}',                               [PledgeController::class, 'show'])->name('pledges.show');
+            Route::post('/pledges/{pledge}/payment',                      [PledgeController::class, 'addPayment'])->name('pledges.payment');
+            Route::post('/pledges/{pledge}/cancel',                       [PledgeController::class, 'cancel'])->name('pledges.cancel');
+            Route::delete('/pledges/{pledge}',                            [PledgeController::class, 'destroy'])->name('pledges.destroy');
         });
 
     // Notifications — admin only

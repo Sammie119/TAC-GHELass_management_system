@@ -13,6 +13,8 @@ use App\Models\Visitor;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Models\NewSoul;
+use App\Models\SoulFollowup;
 
 class ReportController extends Controller
 {
@@ -231,5 +233,100 @@ class ReportController extends Controller
             ->setPaper('a4', 'portrait');
 
         return $pdf->download('absentees-' . $event->event_date->format('Y-m-d') . '.pdf');
+    }
+
+    // ── New Souls Report ──────────────────────────────────────
+    public function soulsReport(Request $request)
+    {
+        $from = $request->from ?? now()->startOfMonth()->toDateString();
+        $to   = $request->to   ?? now()->toDateString();
+
+        $souls = NewSoul::with(['wonBy', 'assignedTo', 'followups'])
+            ->whereBetween('date_won', [$from, $to])
+            ->latest('date_won')
+            ->get();
+
+        $stats = [
+            'total'       => $souls->count(),
+            'new'         => $souls->where('status', 'new')->count(),
+            'contacted'   => $souls->where('status', 'contacted')->count(),
+            'attending'   => $souls->where('status', 'attending')->count(),
+            'baptised'    => $souls->where('status', 'baptised')->count(),
+            'converted'   => $souls->where('status', 'converted')->count(),
+            'backslidden' => $souls->where('status', 'backslidden')->count(),
+            'followups'   => $souls->sum(fn($s) => $s->followups->count()),
+        ];
+
+        // Group by won_by member
+        $byWinner = $souls->whereNotNull('won_by')
+            ->groupBy('won_by')
+            ->map(fn($group) => [
+                'name'  => $group->first()->wonBy?->full_name ?? 'Unknown',
+                'count' => $group->count(),
+            ])
+            ->sortByDesc('count')
+            ->values();
+
+        // Group by area
+        $byArea = $souls->whereNotNull('area')
+            ->groupBy('area')
+            ->map(fn($group) => [
+                'area'  => $group->first()->area,
+                'count' => $group->count(),
+            ])
+            ->sortByDesc('count')
+            ->values();
+
+        return view('admin.reports.souls', compact(
+            'souls', 'stats', 'byWinner', 'byArea', 'from', 'to'
+        ));
+    }
+
+    // ── Export Souls PDF ──────────────────────────────────────
+    public function exportSoulsPdf(Request $request)
+    {
+        $from = $request->from ?? now()->startOfMonth()->toDateString();
+        $to   = $request->to   ?? now()->toDateString();
+
+        $souls = NewSoul::with(['wonBy', 'assignedTo', 'followups'])
+            ->whereBetween('date_won', [$from, $to])
+            ->latest('date_won')->get();
+
+        $stats = [
+            'total'       => $souls->count(),
+            'new'         => $souls->where('status', 'new')->count(),
+            'contacted'   => $souls->where('status', 'contacted')->count(),
+            'attending'   => $souls->where('status', 'attending')->count(),
+            'baptised'    => $souls->where('status', 'baptised')->count(),
+            'converted'   => $souls->where('status', 'converted')->count(),
+            'backslidden' => $souls->where('status', 'backslidden')->count(),
+        ];
+
+        $byWinner = $souls->whereNotNull('won_by')
+            ->groupBy('won_by')
+            ->map(fn($g) => [
+                'name'  => $g->first()->wonBy?->full_name ?? 'Unknown',
+                'count' => $g->count(),
+            ])
+            ->sortByDesc('count')->values();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
+            'admin.reports.pdf.souls',
+            compact('souls', 'stats', 'byWinner', 'from', 'to')
+        )->setPaper('a4', 'portrait');
+
+        return $pdf->download("souls-report-{$from}-to-{$to}.pdf");
+    }
+
+    // ── Export Souls Excel ────────────────────────────────────
+    public function exportSoulsExcel(Request $request)
+    {
+        $from = $request->from ?? now()->startOfMonth()->toDateString();
+        $to   = $request->to   ?? now()->toDateString();
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\SoulsExport($from, $to),
+            "souls-report-{$from}-to-{$to}.xlsx"
+        );
     }
 }

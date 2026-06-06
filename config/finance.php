@@ -1,30 +1,30 @@
 <?php
 
 return array (
-  'currencies' => 
+  'currencies' =>
   array (
-    'GHS' => 
+    'GHS' =>
     array (
       'name' => 'Ghana Cedis',
       'symbol' => 'GH₵',
     ),
-    'USD' => 
+    'USD' =>
     array (
       'name' => 'US Dollars',
       'symbol' => '$',
     ),
-    'GBP' => 
+    'GBP' =>
     array (
       'name' => 'British Pounds',
       'symbol' => '£',
     ),
-    'EUR' => 
+    'EUR' =>
     array (
       'name' => 'Euro',
       'symbol' => '€',
     ),
   ),
-  'income_categories' => 
+  'income_categories' =>
   array (
     'tithe' => 'Tithe',
     'offering' => 'Offering',
@@ -34,7 +34,7 @@ return array (
     'project' => 'Project',
     'other' => 'Other',
   ),
-  'expense_categories' => 
+  'expense_categories' =>
   array (
     'salaries' => 'Salaries',
     'utilities' => 'Utilities',
@@ -43,15 +43,15 @@ return array (
     'outreach' => 'Outreach',
     'other' => 'Other',
   ),
-  'payment_methods' => 
+  'payment_methods' =>
   array (
     'cash' => 'Cash',
     'momo' => 'Mobile Money (MoMo)',
     'bank_transfer' => 'Bank Transfer',
     'cheque' => 'Cheque',
-    'online' => 'Online Payment',
+//    'online' => 'Online Payment',
   ),
-  'income_colors' => 
+  'income_colors' =>
   array (
     'tithe' => '#2563eb',
     'offering' => '#16a34a',
@@ -60,7 +60,7 @@ return array (
     'pledge' => '#0891b2',
     'other' => '#6b7280',
   ),
-  'online_categories' => 
+  'online_categories' =>
   array (
     'tithe' => 'Tithe',
     'offering' => 'Offering',

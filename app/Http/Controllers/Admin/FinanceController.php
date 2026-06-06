@@ -640,4 +640,66 @@ class FinanceController extends Controller
 
         return back()->with('success', $msg);
     }
+
+    // ── Sunday tithes bulk entry ──────────────────────────────
+    public function sundayTithes(Request $request)
+    {
+        $events  = Event::orderBy('event_date', 'desc')->take(20)->get();
+        $members = Member::where('status', 'active')
+            ->orderBy('first_name')->get();
+
+        $activeEvent = Event::where('status', 'active')->latest()->first();
+
+        return view('admin.finance.sunday-tithes', compact('events', 'members', 'activeEvent'));
+    }
+
+    public function storeSundayTithes(Request $request)
+    {
+        $request->validate([
+            'event_id'       => 'nullable|exists:events,id',
+            'payment_date'   => 'required|date',
+            'payment_method' => 'required|string',
+            'currency'       => 'required|string',
+            'exchange_rate'  => 'required|numeric|min:0.0001',
+            'entries'        => 'required|array|min:1',
+            'entries.*.member_id' => 'nullable|exists:members,id',
+            'entries.*.amount'    => 'required|numeric|min:0.01',
+            'entries.*.category'  => 'required|string',
+        ]);
+
+        $count    = 0;
+        $total    = 0;
+        $currency = $request->currency;
+        $rate     = $request->exchange_rate;
+
+        foreach ($request->entries as $entry) {
+            if (empty($entry['amount']) || $entry['amount'] <= 0) continue;
+
+            IncomeRecord::updateOrCreate(
+                [
+                    'member_id'    => $entry['member_id'] ?? null,
+                    'category'     => $entry['category'],
+                    'payment_date' => $request->payment_date,
+                    'currency'     => $currency,
+                    'event_id'     => $request->event_id ?? null,
+                ],
+                [
+                    'amount'         => $entry['amount'],
+                    'exchange_rate'  => $rate,
+                    'amount_ghs'     => $entry['amount'] * $rate,
+                    'payment_method' => $request->payment_method,
+                    'notes'          => $entry['notes'] ?? null,
+                    'status'         => 'confirmed',
+                    'recorded_by'    => auth()->id(),
+                ]
+            );
+
+            $count++;
+            $total += $entry['amount'] * $rate;
+        }
+
+        return back()->with('success',
+            "{$count} tithe records saved. Total: GH₵ " . number_format($total, 2)
+        );
+    }
 }
