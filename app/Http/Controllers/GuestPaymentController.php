@@ -90,7 +90,7 @@ class GuestPaymentController extends Controller
                         'exchange_rate'  => 1,
                         'payment_date'   => today(),
                         'payment_method' => 'online',
-                        'notes'          => 'Online payment confirmed',
+                        'notes'          => $payment->notes,
                         'status'         => 'confirmed',
                         'recorded_by'    => 1,
                     ]);

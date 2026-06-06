@@ -211,9 +211,30 @@
                     onmouseenter="this.style.background='#f9fafb'"
                     onmouseleave="this.style.background=''">
                     <td style="padding:12px 16px;color:#6b7280;">{{ $record->payment_date->format('d M Y') }}</td>
+                    {{-- Member --}}
                     <td style="padding:12px 16px;">
-                        <p style="font-weight:500;color:#111827;">{{ $record->member?->full_name ?? 'Anonymous' }}</p>
-                        <p style="font-size:11px;color:#9ca3af;">{{ $record->member?->member_id_card ?? '' }}</p>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="width:32px;height:32px;border-radius:50%;
+                                background:{{ $record->member_id ? '#dbeafe' : '#fef3c7' }};
+                                display:flex;align-items:center;justify-content:center;
+                                color:{{ $record->member_id ? '#2563eb' : '#d97706' }};
+                                font-size:11px;font-weight:600;flex-shrink:0;">
+                                {{ $record->member_id
+                                    ? strtoupper(substr($record->member->first_name,0,1).substr($record->member->last_name,0,1))
+                                    : '👤' }}
+                            </div>
+                            <div>
+                                @if($record->member_id)
+                                    <p style="font-weight:500;color:#111827;">{{ $record->member->full_name }}</p>
+                                    <p style="font-size:11px;color:#9ca3af;font-family:monospace;">{{ $record->member->member_id_card }}</p>
+                                @else
+                                    <p style="font-weight:500;color:#d97706;">Guest Giver</p>
+                                    <p style="font-size:11px;color:#9ca3af;">
+                                        {{ Str::before($record->notes ?? '', ' |') }}
+                                    </p>
+                                @endif
+                            </div>
+                        </div>
                     </td>
                     <td style="padding:12px 16px;">
                     <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;background:#dcfce7;color:#15803d;">
