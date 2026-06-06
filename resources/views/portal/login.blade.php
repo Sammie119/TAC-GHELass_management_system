@@ -92,7 +92,7 @@
     </form>
 
     <div class="admin-link">
-        Admin? <a href="{{ route('login') }}">Sign in here</a>
+        ← Go Back to <a href="{{ url('/') }}">Welcome Page</a>
     </div>
 </div>
 </body>

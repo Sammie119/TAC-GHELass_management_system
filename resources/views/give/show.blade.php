@@ -48,20 +48,15 @@
         }
         input::placeholder { color: #9ca3af; }
 
-        .amount-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-        .quick-amounts {
-            display: grid; grid-template-columns: repeat(4,1fr);
-            gap: 8px; margin-bottom: 14px;
+        .admin-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 13px;
+            color: #9ca3af;
         }
-        .quick-btn {
-            border: 1.5px solid #e5e7eb; border-radius: 8px;
-            padding: 8px; text-align: center; font-size: 13px;
-            font-weight: 600; color: #374151; cursor: pointer;
-            background: white; transition: all 0.15s;
-        }
-        .quick-btn:hover, .quick-btn.active {
-            border-color: #4f46e5; background: #eff6ff; color: #4f46e5;
+        .admin-link a {
+            color: #2563eb;
+            text-decoration: none;
         }
 
         .btn {
@@ -172,7 +167,7 @@
                 {{-- Notes --}}
                 <label>Message <span style="font-weight:400;color:#9ca3af;">(optional)</span></label>
                 <textarea name="notes" rows="2"
-                          placeholder="e.g. For building fund, In memory of..."
+                          placeholder="e.g. For Project fund...."
                           style="resize:none;">{{ old('notes') }}</textarea>
 
                 <button type="submit" class="btn">
@@ -181,10 +176,12 @@
 
             </form>
 
+            <div class="admin-link">
+                ← Go Back to <a href="{{ url('/') }}">Welcome Page</a>
+            </div>
         </div>
     </div>
 
-    <a href="{{ url('/') }}" class="back-link">← Back to home</a>
 </div>
 
 </body>

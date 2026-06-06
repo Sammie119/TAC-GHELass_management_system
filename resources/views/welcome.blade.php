@@ -88,8 +88,8 @@
     </div>
 
     <h1>{{ config('app.name', 'Church Management System') }}</h1>
-    <p class="tagline">Stay connected with your church.<br>
-        The Apostolic Church-Ghana East Legon Assembly
+    <p class="tagline">Welcome to the online portal of<br>
+        The Apostolic Church-Ghana, East Legon Assembly
 
     </p>
 

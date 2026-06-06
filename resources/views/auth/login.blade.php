@@ -61,10 +61,15 @@
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px #bfdbfe;
         }
-        .checkbox-row {
-            display: flex; align-items: center;
-            gap: 8px; margin-bottom: 20px;
-            font-size: 13px; color: #6b7280;
+        .admin-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 13px;
+            color: #9ca3af;
+        }
+        .admin-link a {
+            color: #2563eb;
+            text-decoration: none;
         }
         .btn {
             width: 100%;
@@ -136,6 +141,10 @@
         <button type="submit" class="btn">Sign in</button>
 
     </form>
+
+    <div class="admin-link">
+        ← Go Back to <a href="{{ url('/') }}">Welcome Page</a>
+    </div>
 </div>
 </body>
 </html>
