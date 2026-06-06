@@ -376,9 +376,9 @@ class MemberPortalController extends Controller
         ]);
 
         if ($validated['category'] === 'project')
-            PaymentService::makePayment($member->email, $validated['amount'], 'Project');
+            PaymentService::makePayment($member->email, $validated['amount'], config('services.paystack.call_back_url'), 'Project');
         else
-            PaymentService::makePayment($member->email, $validated['amount'], 'Main');
+            PaymentService::makePayment($member->email, $validated['amount'], config('services.paystack.call_back_url'),'Main');
 
 //        return back()->with('success', "Payment request submitted! Reference: {$reference}. Our finance team will confirm shortly.");
     }

@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VisitorController;
+use App\Http\Controllers\GuestPaymentController;
 use App\Http\Controllers\MemberPortalController;
 use App\Http\Controllers\SelfCheckinController;
 use Illuminate\Support\Facades\Route;
@@ -185,7 +186,11 @@ Route::prefix('portal')->name('portal.')->group(function () {
     Route::get('/pay',          [MemberPortalController::class, 'paymentPage'])->name('pay');
     Route::post('/pay',         [MemberPortalController::class, 'submitPayment'])->name('pay.submit');
     Route::get('/payments', [MemberPortalController::class, 'payments'])->name('payments');
-
 });
+
+// Guest payment (no login required)
+Route::get('/give',        [GuestPaymentController::class, 'show'])->name('give.show');
+Route::post('/give',       [GuestPaymentController::class, 'submit'])->name('give.submit');
+Route::get('/give/thanks', [GuestPaymentController::class, 'thanks'])->name('give.thanks');
 
 require __DIR__.'/auth.php';

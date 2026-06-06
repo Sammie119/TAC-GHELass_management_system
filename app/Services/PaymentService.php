@@ -7,13 +7,12 @@ use Illuminate\Support\Facades\App;
 
 class PaymentService
 {
-    public static function makePayment($email, $amount, $acc_type = 'Main')
+    public static function makePayment($email, $amount, $callback_url, $acc_type = 'Main')
     {
 //        $amount = ceil(Utils::exchange_rate($amount) * 100);
         $amount = ceil(($amount + ($amount * 0.01)) * 100);
 
         $url = config('services.paystack.payment_url');
-        $callback_url = config('services.paystack.call_back_url');
 
         $fields_main = [
             'email' => $email,

@@ -24,9 +24,30 @@
                 <tr style="border-top:1px solid #f3f4f6;"
                     onmouseenter="this.style.background='#f9fafb'"
                     onmouseleave="this.style.background=''">
+                    {{-- Member --}}
                     <td style="padding:12px 16px;">
-                        <p style="font-weight:500;color:#111827;">{{ $payment->member->full_name }}</p>
-                        <p style="font-size:11px;color:#9ca3af;">{{ $payment->member->member_id_card }}</p>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="width:32px;height:32px;border-radius:50%;
+                                background:{{ $payment->member_id ? '#dbeafe' : '#fef3c7' }};
+                                display:flex;align-items:center;justify-content:center;
+                                color:{{ $payment->member_id ? '#2563eb' : '#d97706' }};
+                                font-size:11px;font-weight:600;flex-shrink:0;">
+                                {{ $payment->member_id
+                                    ? strtoupper(substr($payment->member->first_name,0,1).substr($payment->member->last_name,0,1))
+                                    : '👤' }}
+                            </div>
+                            <div>
+                                @if($payment->member_id)
+                                    <p style="font-weight:500;color:#111827;">{{ $payment->member->full_name }}</p>
+                                    <p style="font-size:11px;color:#9ca3af;font-family:monospace;">{{ $payment->member->member_id_card }}</p>
+                                @else
+                                    <p style="font-weight:500;color:#d97706;">Guest Giver</p>
+                                    <p style="font-size:11px;color:#9ca3af;">
+                                        {{ Str::before($payment->notes ?? '', ' |') }}
+                                    </p>
+                                @endif
+                            </div>
+                        </div>
                     </td>
                     <td style="padding:12px 16px;color:#374151;">{{ ucfirst($payment->category) }}</td>
                     <td style="padding:12px 16px;font-weight:700;color:#16a34a;">

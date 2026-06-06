@@ -27,8 +27,13 @@ class IncomeRecord extends Model
 
     public function member()
     {
-        return $this->belongsTo(Member::class);
+        return $this->belongsTo(Member::class)->withDefault([
+            'first_name'     => 'Guest',
+            'last_name'      => '',
+            'member_id_card' => 'GUEST',
+        ]);
     }
+
 
     public function recordedBy()
     {

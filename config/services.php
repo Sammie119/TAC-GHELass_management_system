@@ -19,6 +19,7 @@ return [
         'public_key' => env('PAYSTACK_PUBLIC_KEY'),
         'payment_url' => env('PAYSTACK_PAYMENT_URL'),
         'call_back_url' => env('PAYSTACK_CALL_BACK_URL'),
+        'callback_url_guest' => env('PAYSTACK_CALL_BACK_URL_GUEST'),
     ],
 
     'mailgun' => [

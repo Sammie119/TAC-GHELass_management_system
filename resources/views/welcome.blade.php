@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config('app.name', 'Church Management System') }}</title>
+
+    {{-- Favicons --}}
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="shortcut icon" href="/favicon.svg">
+    <link rel="apple-touch-icon" href="/favicon.svg">
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -113,6 +119,25 @@
                     </div>
                 </div>
                 <svg style="width:18px;height:18px;color:rgba(255,255,255,0.5);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+
+        {{-- Give / Offering card --}}
+        <a href="{{ route('give.show') }}" class="portal-card">
+            <div class="card-icon" style="background:#fef3c7;">
+                <svg style="width:22px;height:22px;" fill="none" stroke="#d97706" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                </svg>
+            </div>
+            <div class="card-title">Give Offering</div>
+            <div class="card-desc">
+                Give your tithe, offering or project securely online.
+            </div>
+            <div class="card-arrow">
+                <svg style="width:18px;height:18px;color:#6b7280;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
             </div>
