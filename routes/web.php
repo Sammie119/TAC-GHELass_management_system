@@ -100,7 +100,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         });
 
     // Check-in — admin + usher
-    Route::middleware(\Spatie\Permission\Middleware\RoleMiddleware::using('admin|usher'))
+    Route::middleware(\Spatie\Permission\Middleware\RoleMiddleware::using('admin|usher|membership'))
         ->group(function () {
             Route::get('/checkin',          [CheckinController::class, 'index'])->name('checkin.index');
             Route::get('/checkin/search',   [CheckinController::class, 'search'])->name('checkin.search');

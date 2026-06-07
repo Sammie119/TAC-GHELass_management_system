@@ -150,7 +150,7 @@
             @endrole
 
             {{-- Check-in (admin + usher) --}}
-            @hasanyrole('admin|usher')
+            @hasanyrole('admin|usher|membership')
             <a href="{{ route('admin.checkin.index') }}"
                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
               {{ request()->routeIs('admin.checkin.*')

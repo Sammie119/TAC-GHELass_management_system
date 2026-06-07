@@ -39,12 +39,6 @@
     </div>
 
     {{-- Import success/errors --}}
-    @if(session('success'))
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;padding:12px 16px;border-radius:8px;margin-bottom:1rem;font-size:14px;">
-            {{ session('success') }}
-        </div>
-    @endif
-
     @if(session('import_errors') && count(session('import_errors')) > 0)
         <div style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px 16px;border-radius:8px;margin-bottom:1rem;font-size:13px;">
             <p style="font-weight:600;margin-bottom:6px;">Import warnings:</p>
