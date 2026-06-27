@@ -538,6 +538,18 @@ class FinanceController extends Controller
 // ── Save bulk income entries ─────────────────────────────
     public function storeBulkIncome(Request $request)
     {
+        // Strip blank rows before validation so empty table rows don't trigger errors
+        $filled = collect($request->input('entries', []))
+            ->filter(fn($e) => isset($e['amount']) && (float) $e['amount'] > 0)
+            ->values()
+            ->toArray();
+
+        if (empty($filled)) {
+            return back()->with('error', 'Please fill in at least one row with an amount.');
+        }
+
+        $request->merge(['entries' => $filled]);
+
         $request->validate([
             'entries'                  => 'required|array|min:1',
             'entries.*.member_id'      => 'nullable|exists:members,id',
@@ -550,23 +562,23 @@ class FinanceController extends Controller
         ]);
 
         $count = 0;
-        foreach ($request->entries as $entry) {
-            if (empty($entry['amount']) || $entry['amount'] <= 0) continue;
-
-            IncomeRecord::firstorCreate([
-                'member_id'      => $entry['member_id'] ?? null,
-                'category'       => $entry['category'],
-                'amount'         => $entry['amount'],
-                'currency'       => $entry['currency'],
-                'amount_ghs'     => $entry['amount'] * $entry['exchange_rate'],
-                'exchange_rate'  => $entry['exchange_rate'],
-                'payment_date'   => $entry['payment_date'],
-                'payment_method' => $entry['payment_method'],
-                'reference'      => $entry['reference'] ?? null,
-                'notes'          => $entry['notes'] ?? null,
-                'status'         => 'confirmed',
-                'recorded_by'    => auth()->id(),
-            ]);
+        foreach ($filled as $entry) {
+            IncomeRecord::firstOrCreate([
+                    'member_id'      => $entry['member_id'] ?? null,
+                    'payment_date'   => $entry['payment_date'],
+                    'category'       => $entry['category'],
+                    'amount_ghs'     => $entry['amount'] * $entry['exchange_rate'],
+                ],
+                [
+                    'amount'         => $entry['amount'],
+                    'currency'       => $entry['currency'],
+                    'exchange_rate'  => $entry['exchange_rate'],
+                    'payment_method' => $entry['payment_method'],
+                    'reference'      => $entry['reference'] ?? null,
+                    'notes'          => $entry['notes'] ?? null,
+                    'status'         => 'confirmed',
+                    'recorded_by'    => auth()->id(),
+                ]);
             $count++;
         }
 

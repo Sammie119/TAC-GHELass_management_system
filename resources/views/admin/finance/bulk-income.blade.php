@@ -19,9 +19,25 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;padding:12px 16px;border-radius:8px;margin-bottom:1.5rem;font-size:14px;">
-            {{ session('success') }}
+{{--    @if(session('success'))--}}
+{{--        <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;padding:12px 16px;border-radius:8px;margin-bottom:1.5rem;font-size:14px;">--}}
+{{--            {{ session('success') }}--}}
+{{--        </div>--}}
+{{--    @endif--}}
+
+    @if(session('error'))
+        <div style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px 16px;border-radius:8px;margin-bottom:1.5rem;font-size:14px;">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px 16px;border-radius:8px;margin-bottom:1.5rem;font-size:14px;">
+            <ul style="margin:0;padding-left:16px;">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
         </div>
     @endif
 

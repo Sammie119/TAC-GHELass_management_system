@@ -106,6 +106,10 @@
                                                 Full access to all modules
                                             @elseif($role->name === 'usher')
                                                 Can manage check-ins and visitors
+                                            @elseif($role->name === 'finance')
+                                                Can manage all income and expences
+                                            @elseif($role->name === 'membership')
+                                                Can manage Membership and cell groups
                                             @else
                                                 Basic member access only
                                             @endif
