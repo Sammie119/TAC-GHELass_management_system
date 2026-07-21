@@ -11,7 +11,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -51,5 +51,10 @@ class User extends Authenticatable
     public function attendanceMarked()
     {
         return $this->hasMany(Attendance::class, 'checked_in_by');
+    }
+
+    public function isFinanceChairman(): bool
+    {
+        return $this->id === 1 || $this->hasRole('finance_chairman');
     }
 }

@@ -68,26 +68,33 @@
 
     {{-- Manual bulk entry --}}
     <div style="background:white;border-radius:14px;border:1px solid #e5e7eb;padding:20px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="bulk-section-header" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
             <div>
                 <h3 style="font-size:14px;font-weight:600;color:#111827;">Option 2 — Manual bulk entry</h3>
                 <p style="font-size:13px;color:#6b7280;margin-top:2px;">Add rows and fill in details for each member</p>
             </div>
 
             {{-- Global defaults --}}
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div class="bulk-defaults" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 <select id="global-category"
-                        style="border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;">
+                        style="flex:1;min-width:120px;border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;">
                     @foreach(config('finance.income_categories') as $key => $label)
                         <option value="{{ $key }}">{{ $label }}</option>
                     @endforeach
                 </select>
                 <input type="date" id="global-date" value="{{ today()->toDateString() }}"
-                       style="border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;">
+                       style="flex:1;min-width:130px;border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;">
                 <select id="global-method"
-                        style="border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;">
+                        style="flex:1;min-width:140px;border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;">
                     @foreach(config('finance.payment_methods') as $key => $label)
                         <option value="{{ $key }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+                <select id="global-bank-account"
+                        style="flex:1;min-width:160px;border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;">
+                    <option value="">— None / Cash —</option>
+                    @foreach($bankAccounts as $account)
+                        <option value="{{ $account->id }}">{{ $account->bank_name }} — {{ $account->name }}</option>
                     @endforeach
                 </select>
                 <button onclick="applyGlobal()"
@@ -111,6 +118,7 @@
                         <th style="padding:10px 8px;text-align:left;font-size:11px;color:#6b7280;font-weight:500;min-width:100px;">Amount</th>
                         <th style="padding:10px 8px;text-align:left;font-size:11px;color:#6b7280;font-weight:500;min-width:80px;">Rate</th>
                         <th style="padding:10px 8px;text-align:left;font-size:11px;color:#6b7280;font-weight:500;min-width:120px;">Method</th>
+                        <th style="padding:10px 8px;text-align:left;font-size:11px;color:#6b7280;font-weight:500;min-width:160px;">Bank account</th>
                         <th style="padding:10px 8px;text-align:left;font-size:11px;color:#6b7280;font-weight:500;min-width:110px;">Date</th>
                         <th style="padding:10px 8px;text-align:left;font-size:11px;color:#6b7280;font-weight:500;min-width:100px;">Reference</th>
                         <th style="padding:10px 8px;width:40px;"></th>
@@ -122,7 +130,7 @@
                 </table>
             </div>
 
-            <div style="display:flex;gap:10px;margin-top:16px;align-items:center;">
+            <div class="bulk-footer" style="display:flex;gap:10px;margin-top:16px;align-items:center;flex-wrap:wrap;">
                 <button type="button" onclick="addRow()"
                         style="background:#f3f4f6;border:1px solid #d1d5db;color:#374151;padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;">
                     + Add row
@@ -131,8 +139,8 @@
                         style="background:#f3f4f6;border:1px solid #d1d5db;color:#374151;padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer;">
                     + Add 10 rows
                 </button>
-                <span id="row-count" style="font-size:13px;color:#9ca3af;margin-left:auto;">0 rows</span>
-                <button type="submit"
+                <span id="row-count" class="row-count" style="font-size:13px;color:#9ca3af;margin-left:auto;">0 rows</span>
+                <button type="submit" class="save-btn"
                         style="background:#16a34a;color:white;padding:9px 20px;border-radius:8px;font-size:14px;font-weight:600;border:none;cursor:pointer;">
                     Save all records
                 </button>
@@ -145,7 +153,8 @@
         const categories = @json(config('finance.income_categories'));
         const methods    = @json(config('finance.payment_methods'));
         const currencies = @json(array_keys(config('finance.currencies')));
-        const rates      = { GHS: 1, USD: 15.5, GBP: 19.5, EUR: 17.0 };
+        const rates      = @json(collect(config('finance.currencies'))->map(fn($c) => $c['rate'] ?? 1));
+        const bankAccounts = @json($bankAccounts->mapWithKeys(fn($a) => [$a->id => $a->bank_name.' — '.$a->name]));
 
         function addRow(defaults = {}) {
             const i    = rowIndex++;
@@ -164,6 +173,10 @@
 
             const currOptions = currencies
                 .map(c => `<option value="${c}" ${c === (defaults.currency || 'GHS') ? 'selected' : ''}>${c}</option>`)
+                .join('');
+
+            const bankAccountOptions = '<option value="">— None / Cash —</option>' + Object.entries(bankAccounts)
+                .map(([k,v]) => `<option value="${k}" ${k === String(defaults.bankAccountId || '') ? 'selected' : ''}>${v}</option>`)
                 .join('');
 
             tr.innerHTML = `
@@ -212,6 +225,12 @@
             <select name="entries[${i}][payment_method]"
                     style="width:100%;border:1px solid #d1d5db;border-radius:6px;padding:7px 8px;font-size:13px;outline:none;">
                 ${methodOptions}
+            </select>
+        </td>
+        <td style="padding:6px 8px;">
+            <select name="entries[${i}][bank_account_id]" id="bank-${i}"
+                    style="width:100%;border:1px solid #d1d5db;border-radius:6px;padding:7px 8px;font-size:13px;outline:none;">
+                ${bankAccountOptions}
             </select>
         </td>
         <td style="padding:6px 8px;">
@@ -291,15 +310,17 @@
         }
 
         function applyGlobal() {
-            const cat    = document.getElementById('global-category').value;
-            const date   = document.getElementById('global-date').value;
-            const method = document.getElementById('global-method').value;
+            const cat     = document.getElementById('global-category').value;
+            const date    = document.getElementById('global-date').value;
+            const method  = document.getElementById('global-method').value;
+            const bankAcc = document.getElementById('global-bank-account').value;
 
             document.querySelectorAll('#bulk-body tr').forEach((tr, idx) => {
                 const selects = tr.querySelectorAll('select');
                 const inputs  = tr.querySelectorAll('input[type=date]');
                 if (selects[0]) selects[0].value = cat;
                 if (selects[2]) selects[2].value = method;
+                if (selects[3]) selects[3].value = bankAcc;
                 if (inputs[0])  inputs[0].value  = date;
             });
         }
@@ -307,5 +328,20 @@
         // Start with 5 rows
         addRows(10);
     </script>
+
+    <style>
+        @media(max-width:640px){
+            .bulk-section-header { align-items:flex-start; }
+            .bulk-defaults { width:100%; }
+            .bulk-defaults select,
+            .bulk-defaults input[type=date] { flex:1 1 100%; min-width:0; box-sizing:border-box; }
+            .bulk-footer .row-count { margin-left:0 !important; }
+            .bulk-footer .save-btn { width:100%; text-align:center; order:3; }
+        }
+        @media(max-width:768px){
+            .bulk-footer .row-count { order:1; width:100%; }
+            .bulk-footer .save-btn { order:2; }
+        }
+    </style>
 
 @endsection

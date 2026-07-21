@@ -13,12 +13,6 @@
         </a>
     </div>
 
-    @if(session('success'))
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;padding:12px 16px;border-radius:8px;margin-bottom:1.5rem;font-size:14px;">
-            {{ session('success') }}
-        </div>
-    @endif
-
     @if($errors->any())
         <div style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px 16px;border-radius:8px;margin-bottom:1.5rem;font-size:14px;">
             <ul style="list-style:disc;padding-left:20px;">
@@ -67,10 +61,14 @@
                                            {{ old('role', $user->roles->first()?->name) === $role->name ? 'checked' : '' }}
                                            style="margin-top:2px;accent-color:#2563eb;">
                                     <div>
-                                        <p style="font-size:14px;font-weight:500;color:#111827;">{{ ucfirst($role->name) }}</p>
+                                        <p style="font-size:14px;font-weight:500;color:#111827;">{{ ucwords(str_replace('_', ' ', $role->name)) }}</p>
                                         <p style="font-size:12px;color:#9ca3af;margin-top:2px;">
                                             @if($role->name === 'admin') Full access to all modules
                                             @elseif($role->name === 'usher') Can manage check-ins and visitors
+                                            @elseif($role->name === 'finance') Can manage all income and expenses
+                                            @elseif($role->name === 'membership') Can manage Membership and cell groups
+                                            @elseif($role->name === 'pastor') Full access, except Settings, Users & Roles, and Notifications
+                                            @elseif($role->name === 'finance_chairman') Same access as Finance, plus final financial request approval
                                             @else Basic member access only
                                             @endif
                                         </p>
@@ -134,8 +132,11 @@
                         <span style="display:inline-block;margin-top:8px;padding:3px 14px;border-radius:20px;font-size:12px;font-weight:500;
                 {{ $role->name === 'admin'  ? 'background:#dbeafe;color:#1d4ed8;' : '' }}
                 {{ $role->name === 'usher'  ? 'background:#dcfce7;color:#15803d;' : '' }}
-                {{ $role->name === 'member' ? 'background:#fef3c7;color:#d97706;' : '' }}">
-                {{ ucfirst($role->name) }}
+                {{ $role->name === 'membership' ? 'background:#fef3c7;color:#d97706;' : '' }}
+                {{ $role->name === 'finance'  ? 'background:#fef2f2;color:#7f1d1d;' : '' }}
+                {{ $role->name === 'pastor'  ? 'background:#f3e8ff;color:#7c3aed;' : '' }}
+                {{ $role->name === 'finance_chairman'  ? 'background:#cffafe;color:#0e7490;' : '' }}">
+                {{ ucwords(str_replace('_', ' ', $role->name)) }}
             </span>
                     @endforeach
                 </div>

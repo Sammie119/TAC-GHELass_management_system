@@ -20,8 +20,10 @@
             {{ $role->name === 'admin'  ? 'background:#dbeafe;color:#1d4ed8;' : '' }}
             {{ $role->name === 'usher'  ? 'background:#dcfce7;color:#15803d;' : '' }}
             {{ $role->name === 'membership' ? 'background:#fef3c7;color:#d97706;' : '' }}
-            {{ $role->name === 'finance'  ? 'background:#fef2f2;color:#7f1d1d;' : '' }}">
-        {{ ucfirst($role->name) }}
+            {{ $role->name === 'finance'  ? 'background:#fef2f2;color:#7f1d1d;' : '' }}
+            {{ $role->name === 'pastor'  ? 'background:#f3e8ff;color:#7c3aed;' : '' }}
+            {{ $role->name === 'finance_chairman'  ? 'background:#cffafe;color:#0e7490;' : '' }}">
+        {{ ucwords(str_replace('_', ' ', $role->name)) }}
     </span>
         @endforeach
     </div>
@@ -92,8 +94,10 @@
                             {{ $role->name === 'admin'  ? 'background:#dbeafe;color:#1d4ed8;' : '' }}
                             {{ $role->name === 'usher'  ? 'background:#dcfce7;color:#15803d;' : '' }}
                             {{ $role->name === 'membership' ? 'background:#fef3c7;color:#d97706;' : '' }}
-                            {{ $role->name === 'finance'  ? 'background:#fef2f2;color:#7f1d1d;' : '' }}">
-                            {{ ucfirst($role->name) }}
+                            {{ $role->name === 'finance'  ? 'background:#fef2f2;color:#7f1d1d;' : '' }}
+                            {{ $role->name === 'pastor'  ? 'background:#f3e8ff;color:#7c3aed;' : '' }}
+                            {{ $role->name === 'finance_chairman'  ? 'background:#cffafe;color:#0e7490;' : '' }}">
+                            {{ ucwords(str_replace('_', ' ', $role->name)) }}
                         </span>
                             @endforeach
                         </td>

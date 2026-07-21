@@ -141,6 +141,17 @@
                                style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:9px 12px;font-size:14px;outline:none;box-sizing:border-box;">
                     </div>
 
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:5px;">Bank account</label>
+                        <select name="bank_account_id"
+                                style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:9px 12px;font-size:14px;outline:none;">
+                            <option value="">— None / Cash —</option>
+                            @foreach($bankAccounts as $account)
+                                <option value="{{ $account->id }}">{{ $account->bank_name }} — {{ $account->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
                 </div>
             </div>
 
@@ -279,7 +290,7 @@
     <div style="margin-top:16px;">{{ $records->links() }}</div>
 
     <script>
-        const rates = { GHS: 1, USD: 15.5, GBP: 19.5, EUR: 17.0 }; // Update with live rates
+        const rates = @json(collect(config('finance.currencies'))->map(fn($c) => $c['rate'] ?? 1));
 
         function updateExchangeRate() {
             const currency = document.getElementById('currency-select').value;

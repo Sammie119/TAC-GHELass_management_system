@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\FinanceExport;
+use App\Exports\IncomeTemplateExport;
 use App\Http\Controllers\Controller;
+use App\Models\BankAccount;
+use App\Models\BudgetLine;
 use App\Models\Event;
 use App\Models\ExpenseRecord;
 use App\Models\IncomeRecord;
@@ -11,7 +15,6 @@ use App\Models\OnlinePayment;
 use App\Services\PaymentService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class FinanceController extends Controller
@@ -20,7 +23,7 @@ class FinanceController extends Controller
     public function index(Request $request)
     {
         $from = $request->from ?? now()->startOfMonth()->toDateString();
-        $to   = $request->to   ?? now()->toDateString();
+        $to = $request->to ?? now()->toDateString();
 
         // Summary
         $totalIncome = IncomeRecord::where('status', 'confirmed')
@@ -39,9 +42,9 @@ class FinanceController extends Controller
             ->selectRaw('category, SUM(amount_ghs) as total')
             ->groupBy('category')
             ->get()
-            ->map(fn($r) => [
+            ->map(fn ($r) => [
                 'category' => ucfirst($r->category),
-                'total'    => (float) $r->total,
+                'total' => (float) $r->total,
             ]);
 
         // Expense by category
@@ -53,15 +56,16 @@ class FinanceController extends Controller
         // Monthly trend (last 6 months)
         $monthlyTrend = collect(range(5, 0))->map(function ($i) {
             $date = now()->subMonths($i);
+
             return [
-                'month'    => $date->format('M Y'),
-                'income'   => IncomeRecord::where('status', 'confirmed')
+                'month' => $date->format('M Y'),
+                'income' => IncomeRecord::where('status', 'confirmed')
                     ->whereMonth('payment_date', $date->month)
-                    ->whereYear('payment_date',  $date->year)
+                    ->whereYear('payment_date', $date->year)
                     ->sum('amount_ghs'),
                 'expenses' => ExpenseRecord::where('status', 'approved')
                     ->whereMonth('expense_date', $date->month)
-                    ->whereYear('expense_date',  $date->year)
+                    ->whereYear('expense_date', $date->year)
                     ->sum('amount_ghs'),
             ];
         });
@@ -107,52 +111,55 @@ class FinanceController extends Controller
         }
 
         $records = $query->latest('payment_date')->paginate(20)->withQueryString();
-        $total   = $query->sum('amount_ghs');
+        $total = $query->sum('amount_ghs');
         $members = Member::where('status', 'active')->orderBy('first_name')->get();
-        $events  = Event::orderBy('event_date', 'desc')->take(20)->get();
+        $events = Event::orderBy('event_date', 'desc')->take(20)->get();
+        $bankAccounts = BankAccount::where('is_active', true)->orderBy('name')->get();
 
-        return view('admin.finance.income', compact('records', 'total', 'members', 'events'));
+        return view('admin.finance.income', compact('records', 'total', 'members', 'events', 'bankAccounts'));
     }
 
     // ── Store income ────────────────────────────────────────
     public function storeIncome(Request $request)
     {
         $validated = $request->validate([
-            'member_id'      => 'nullable|exists:members,id',
-            'category'       => 'required|string',
-            'amount'         => 'required|numeric|min:0.01',
-            'currency'       => 'required|string',
-            'exchange_rate'  => 'required|numeric|min:0.0001',
-            'payment_date'   => 'required|date',
+            'member_id' => 'nullable|exists:members,id',
+            'category' => 'required|string',
+            'amount' => 'required|numeric|min:0.01',
+            'currency' => 'required|string',
+            'exchange_rate' => 'required|numeric|min:0.0001',
+            'payment_date' => 'required|date',
             'payment_method' => 'required|string',
-            'reference'      => 'nullable|string|max:100',
-            'event_id'       => 'nullable|exists:events,id',
-            'notes'          => 'nullable|string|max:500',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'reference' => 'nullable|string|max:100',
+            'event_id' => 'nullable|exists:events,id',
+            'notes' => 'nullable|string|max:500',
         ]);
 
-        $validated['amount_ghs']  = $validated['amount'] * $validated['exchange_rate'];
+        $validated['amount_ghs'] = $validated['amount'] * $validated['exchange_rate'];
         $validated['recorded_by'] = auth()->id();
-        $validated['status']      = 'confirmed';
+        $validated['status'] = 'confirmed';
 
         // Match on: member + category + date + currency
         // Update amount and other fields if already exists
         $record = IncomeRecord::updateOrCreate(
             [
-                'member_id'    => $validated['member_id'] ?? null,
-                'category'     => $validated['category'],
+                'member_id' => $validated['member_id'] ?? null,
+                'category' => $validated['category'],
                 'payment_date' => $validated['payment_date'],
-                'currency'     => $validated['currency'],
+                'currency' => $validated['currency'],
             ],
             [
-                'amount'         => $validated['amount'],
-                'exchange_rate'  => $validated['exchange_rate'],
-                'amount_ghs'     => $validated['amount_ghs'],
+                'amount' => $validated['amount'],
+                'exchange_rate' => $validated['exchange_rate'],
+                'amount_ghs' => $validated['amount_ghs'],
                 'payment_method' => $validated['payment_method'],
-                'reference'      => $validated['reference'] ?? null,
-                'event_id'       => $validated['event_id'] ?? null,
-                'notes'          => $validated['notes'] ?? null,
-                'recorded_by'    => $validated['recorded_by'],
-                'status'         => $validated['status'],
+                'bank_account_id' => $validated['bank_account_id'] ?? null,
+                'reference' => $validated['reference'] ?? null,
+                'event_id' => $validated['event_id'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'recorded_by' => $validated['recorded_by'],
+                'status' => $validated['status'],
             ]
         );
 
@@ -179,25 +186,29 @@ class FinanceController extends Controller
         }
 
         $records = $query->latest('expense_date')->paginate(20)->withQueryString();
-        $total   = $query->sum('amount_ghs');
+        $total = $query->sum('amount_ghs');
+        $bankAccounts = BankAccount::where('is_active', true)->orderBy('name')->get();
+        $budgetLines = BudgetLine::where('is_active', true)->orderBy('name')->get();
 
-        return view('admin.finance.expenses', compact('records', 'total'));
+        return view('admin.finance.expenses', compact('records', 'total', 'bankAccounts', 'budgetLines'));
     }
 
     // ── Store expense ────────────────────────────────────────
     public function storeExpense(Request $request)
     {
         $validated = $request->validate([
-            'category'       => 'required|string',
-            'description'    => 'required|string|max:255',
-            'amount'         => 'required|numeric|min:0.01',
-            'currency'       => 'required|string',
-            'exchange_rate'  => 'required|numeric|min:0.0001',
-            'expense_date'   => 'required|date',
+            'category' => 'required|string',
+            'description' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0.01',
+            'currency' => 'required|string',
+            'exchange_rate' => 'required|numeric|min:0.0001',
+            'expense_date' => 'required|date',
             'payment_method' => 'required|string',
-            'payee'          => 'nullable|string|max:100',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'budget_line_id' => 'nullable|exists:budget_lines,id',
+            'payee' => 'nullable|string|max:100',
             'receipt_number' => 'nullable|string|max:100',
-            'notes'          => 'nullable|string|max:500',
+            'notes' => 'nullable|string|max:500',
         ]);
 
         if ($request->hasFile('attachment')) {
@@ -205,29 +216,31 @@ class FinanceController extends Controller
                 ->store('finance/attachments', 'public');
         }
 
-        $validated['amount_ghs']  = $validated['amount'] * $validated['exchange_rate'];
+        $validated['amount_ghs'] = $validated['amount'] * $validated['exchange_rate'];
         $validated['recorded_by'] = auth()->id();
-        $validated['status']      = 'approved';
+        $validated['status'] = 'approved';
 
         // Match on: category + description + date + currency
         $record = ExpenseRecord::updateOrCreate(
             [
-                'category'     => $validated['category'],
-                'description'  => $validated['description'],
+                'category' => $validated['category'],
+                'description' => $validated['description'],
                 'expense_date' => $validated['expense_date'],
-                'currency'     => $validated['currency'],
+                'currency' => $validated['currency'],
             ],
             [
-                'amount'         => $validated['amount'],
-                'exchange_rate'  => $validated['exchange_rate'],
-                'amount_ghs'     => $validated['amount_ghs'],
+                'amount' => $validated['amount'],
+                'exchange_rate' => $validated['exchange_rate'],
+                'amount_ghs' => $validated['amount_ghs'],
                 'payment_method' => $validated['payment_method'],
-                'payee'          => $validated['payee'] ?? null,
+                'bank_account_id' => $validated['bank_account_id'] ?? null,
+                'budget_line_id' => $validated['budget_line_id'] ?? null,
+                'payee' => $validated['payee'] ?? null,
                 'receipt_number' => $validated['receipt_number'] ?? null,
-                'attachment'     => $validated['attachment'] ?? null,
-                'notes'          => $validated['notes'] ?? null,
-                'recorded_by'    => $validated['recorded_by'],
-                'status'         => $validated['status'],
+                'attachment' => $validated['attachment'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'recorded_by' => $validated['recorded_by'],
+                'status' => $validated['status'],
             ]
         );
 
@@ -242,17 +255,19 @@ class FinanceController extends Controller
     public function destroyIncome(IncomeRecord $income)
     {
         $income->delete();
+
         return back()->with('success', 'Income record archived successfully.');
     }
 
-// ── Soft delete expense ──────────────────────────────────
+    // ── Soft delete expense ──────────────────────────────────
     public function destroyExpense(ExpenseRecord $expense)
     {
         $expense->delete();
+
         return back()->with('success', 'Expense record archived successfully.');
     }
 
-// ── Archived income list ─────────────────────────────────
+    // ── Archived income list ─────────────────────────────────
     public function archivedIncome(Request $request)
     {
         $query = IncomeRecord::onlyTrashed()->with(['member', 'recordedBy']);
@@ -272,7 +287,7 @@ class FinanceController extends Controller
         return view('admin.finance.archived-income', compact('records'));
     }
 
-// ── Archived expense list ────────────────────────────────
+    // ── Archived expense list ────────────────────────────────
     public function archivedExpenses(Request $request)
     {
         $query = ExpenseRecord::onlyTrashed()->with('recordedBy');
@@ -292,35 +307,39 @@ class FinanceController extends Controller
         return view('admin.finance.archived-expenses', compact('records'));
     }
 
-// ── Restore income ───────────────────────────────────────
+    // ── Restore income ───────────────────────────────────────
     public function restoreIncome($id)
     {
         $record = IncomeRecord::onlyTrashed()->findOrFail($id);
         $record->restore();
+
         return back()->with('success', 'Income record restored successfully.');
     }
 
-// ── Restore expense ──────────────────────────────────────
+    // ── Restore expense ──────────────────────────────────────
     public function restoreExpense($id)
     {
         $record = ExpenseRecord::onlyTrashed()->findOrFail($id);
         $record->restore();
+
         return back()->with('success', 'Expense record restored successfully.');
     }
 
-// ── Permanently delete income ────────────────────────────
+    // ── Permanently delete income ────────────────────────────
     public function forceDeleteIncome($id)
     {
         $record = IncomeRecord::onlyTrashed()->findOrFail($id);
         $record->forceDelete();
+
         return back()->with('success', 'Income record permanently deleted.');
     }
 
-// ── Permanently delete expense ───────────────────────────
+    // ── Permanently delete expense ───────────────────────────
     public function forceDeleteExpense($id)
     {
         $record = ExpenseRecord::onlyTrashed()->findOrFail($id);
         $record->forceDelete();
+
         return back()->with('success', 'Expense record permanently deleted.');
     }
 
@@ -365,6 +384,7 @@ class FinanceController extends Controller
             return back()->with('success', 'Payment confirmed and income record created.');
         } else {
             $response['error'] = $response['error'] ?? 'Transaction reference not found.';
+
             return back()->with('error', $response['error']);
         }
     }
@@ -386,7 +406,7 @@ class FinanceController extends Controller
     public function report(Request $request)
     {
         $from = $request->from ?? now()->startOfMonth()->toDateString();
-        $to   = $request->to   ?? now()->toDateString();
+        $to = $request->to ?? now()->toDateString();
 
         $income = IncomeRecord::with(['member', 'recordedBy'])
             ->where('status', 'confirmed')
@@ -398,15 +418,16 @@ class FinanceController extends Controller
             ->whereBetween('expense_date', [$from, $to])
             ->latest('expense_date')->get();
 
-        $totalIncome   = $income->sum('amount_ghs');
+        $totalIncome = $income->sum('amount_ghs');
         $totalExpenses = $expenses->sum('amount_ghs');
-        $netBalance    = $totalIncome - $totalExpenses;
+        $netBalance = $totalIncome - $totalExpenses;
 
         // ── Always show ALL configured categories, even zero ──
         $allIncomeCategories = config('finance.income_categories');
         $incomeByCategory = collect($allIncomeCategories)
             ->map(function ($label, $key) use ($income) {
                 $group = $income->where('category', $key);
+
                 return [
                     'label' => $label,
                     'total' => $group->sum('amount_ghs'),
@@ -418,6 +439,7 @@ class FinanceController extends Controller
         $expenseByCategory = collect($allExpenseCategories)
             ->map(function ($label, $key) use ($expenses) {
                 $group = $expenses->where('category', $key);
+
                 return [
                     'label' => $label,
                     'total' => $group->sum('amount_ghs'),
@@ -430,9 +452,10 @@ class FinanceController extends Controller
             ->groupBy('member_id')
             ->map(function ($group) {
                 $member = $group->first()->member;
+
                 return [
-                    'name'  => $member?->full_name ?? 'Anonymous',
-                    'id'    => $member?->member_id_card ?? '—',
+                    'name' => $member?->full_name ?? 'Anonymous',
+                    'id' => $member?->member_id_card ?? '—',
                     'total' => $group->sum('amount_ghs'),
                     'count' => $group->count(),
                 ];
@@ -451,7 +474,7 @@ class FinanceController extends Controller
     public function exportPdf(Request $request)
     {
         $from = $request->from ?? now()->startOfMonth()->toDateString();
-        $to   = $request->to   ?? now()->toDateString();
+        $to = $request->to ?? now()->toDateString();
 
         $income = IncomeRecord::with('member')
             ->where('status', 'confirmed')
@@ -463,14 +486,15 @@ class FinanceController extends Controller
             ->whereBetween('expense_date', [$from, $to])
             ->latest('expense_date')->get();
 
-        $totalIncome   = $income->sum('amount_ghs');
+        $totalIncome = $income->sum('amount_ghs');
         $totalExpenses = $expenses->sum('amount_ghs');
-        $netBalance    = $totalIncome - $totalExpenses;
+        $netBalance = $totalIncome - $totalExpenses;
 
         // Build category breakdowns — all categories, even zeros
         $incomeByCategory = collect(config('finance.income_categories'))
             ->map(function ($label, $key) use ($income) {
                 $group = $income->where('category', $key);
+
                 return [
                     'label' => $label,
                     'total' => $group->sum('amount_ghs'),
@@ -481,6 +505,7 @@ class FinanceController extends Controller
         $expenseByCategory = collect(config('finance.expense_categories'))
             ->map(function ($label, $key) use ($expenses) {
                 $group = $expenses->where('category', $key);
+
                 return [
                     'label' => $label,
                     'total' => $group->sum('amount_ghs'),
@@ -493,9 +518,10 @@ class FinanceController extends Controller
             ->groupBy('member_id')
             ->map(function ($group) {
                 $member = $group->first()->member;
+
                 return [
-                    'name'  => $member?->full_name ?? 'Anonymous',
-                    'id'    => $member?->member_id_card ?? '—',
+                    'name' => $member?->full_name ?? 'Anonymous',
+                    'id' => $member?->member_id_card ?? '—',
                     'total' => $group->sum('amount_ghs'),
                     'count' => $group->count(),
                 ];
@@ -517,10 +543,10 @@ class FinanceController extends Controller
     public function exportExcel(Request $request)
     {
         $from = $request->from ?? now()->startOfMonth()->toDateString();
-        $to   = $request->to   ?? now()->toDateString();
+        $to = $request->to ?? now()->toDateString();
 
         return Excel::download(
-            new \App\Exports\FinanceExport($from, $to),
+            new FinanceExport($from, $to),
             "finance-{$from}-to-{$to}.xlsx"
         );
     }
@@ -530,17 +556,18 @@ class FinanceController extends Controller
     {
         $members = Member::where('status', 'active')
             ->orderBy('first_name')->get();
-        $events  = Event::orderBy('event_date', 'desc')->take(20)->get();
+        $events = Event::orderBy('event_date', 'desc')->take(20)->get();
+        $bankAccounts = BankAccount::where('is_active', true)->orderBy('name')->get();
 
-        return view('admin.finance.bulk-income', compact('members', 'events'));
+        return view('admin.finance.bulk-income', compact('members', 'events', 'bankAccounts'));
     }
 
-// ── Save bulk income entries ─────────────────────────────
+    // ── Save bulk income entries ─────────────────────────────
     public function storeBulkIncome(Request $request)
     {
         // Strip blank rows before validation so empty table rows don't trigger errors
         $filled = collect($request->input('entries', []))
-            ->filter(fn($e) => isset($e['amount']) && (float) $e['amount'] > 0)
+            ->filter(fn ($e) => isset($e['amount']) && (float) $e['amount'] > 0)
             ->values()
             ->toArray();
 
@@ -551,33 +578,35 @@ class FinanceController extends Controller
         $request->merge(['entries' => $filled]);
 
         $request->validate([
-            'entries'                  => 'required|array|min:1',
-            'entries.*.member_id'      => 'nullable|exists:members,id',
-            'entries.*.amount'         => 'required|numeric|min:0.01',
-            'entries.*.category'       => 'required|string',
-            'entries.*.currency'       => 'required|string',
-            'entries.*.exchange_rate'  => 'required|numeric|min:0.0001',
+            'entries' => 'required|array|min:1',
+            'entries.*.member_id' => 'nullable|exists:members,id',
+            'entries.*.amount' => 'required|numeric|min:0.01',
+            'entries.*.category' => 'required|string',
+            'entries.*.currency' => 'required|string',
+            'entries.*.exchange_rate' => 'required|numeric|min:0.0001',
             'entries.*.payment_method' => 'required|string',
-            'entries.*.payment_date'   => 'required|date',
+            'entries.*.bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'entries.*.payment_date' => 'required|date',
         ]);
 
         $count = 0;
         foreach ($filled as $entry) {
             IncomeRecord::firstOrCreate([
-                    'member_id'      => $entry['member_id'] ?? null,
-                    'payment_date'   => $entry['payment_date'],
-                    'category'       => $entry['category'],
-                    'amount_ghs'     => $entry['amount'] * $entry['exchange_rate'],
-                ],
+                'member_id' => $entry['member_id'] ?? null,
+                'payment_date' => $entry['payment_date'],
+                'category' => $entry['category'],
+                'amount_ghs' => $entry['amount'] * $entry['exchange_rate'],
+            ],
                 [
-                    'amount'         => $entry['amount'],
-                    'currency'       => $entry['currency'],
-                    'exchange_rate'  => $entry['exchange_rate'],
+                    'amount' => $entry['amount'],
+                    'currency' => $entry['currency'],
+                    'exchange_rate' => $entry['exchange_rate'],
                     'payment_method' => $entry['payment_method'],
-                    'reference'      => $entry['reference'] ?? null,
-                    'notes'          => $entry['notes'] ?? null,
-                    'status'         => 'confirmed',
-                    'recorded_by'    => auth()->id(),
+                    'bank_account_id' => $entry['bank_account_id'] ?? null,
+                    'reference' => $entry['reference'] ?? null,
+                    'notes' => $entry['notes'] ?? null,
+                    'status' => 'confirmed',
+                    'recorded_by' => auth()->id(),
                 ]);
             $count++;
         }
@@ -585,7 +614,7 @@ class FinanceController extends Controller
         return back()->with('success', "{$count} income records saved successfully.");
     }
 
-// ── Excel template download ──────────────────────────────
+    // ── Excel template download ──────────────────────────────
     public function downloadTemplate()
     {
         $headers = ['Member ID Card', 'Category', 'Amount', 'Currency', 'Payment Method', 'Payment Date', 'Reference', 'Notes'];
@@ -596,59 +625,62 @@ class FinanceController extends Controller
         ];
 
         return Excel::download(
-            new \App\Exports\IncomeTemplateExport($headers, $example),
+            new IncomeTemplateExport($headers, $example),
             'income-bulk-template.xlsx'
         );
     }
 
-// ── Process Excel upload ─────────────────────────────────
+    // ── Process Excel upload ─────────────────────────────────
     public function uploadExcel(Request $request)
     {
         $request->validate([
             'excel_file' => 'required|file|mimes:xlsx,xls,csv',
         ]);
 
-        $rows    = Excel::toArray([], $request->file('excel_file'));
-        $data    = $rows[0] ?? [];
-        $count   = 0;
-        $errors  = [];
+        $rows = Excel::toArray([], $request->file('excel_file'));
+        $data = $rows[0] ?? [];
+        $count = 0;
+        $errors = [];
 
         // Skip header row
         foreach (array_slice($data, 1) as $i => $row) {
-            if (empty($row[0]) && empty($row[2])) continue;
+            if (empty($row[0]) && empty($row[2])) {
+                continue;
+            }
 
             $member = Member::where('member_id_card', trim($row[0] ?? ''))->first();
             $amount = (float) ($row[2] ?? 0);
 
             if ($amount <= 0) {
-                $errors[] = "Row " . ($i + 2) . ": Invalid amount";
+                $errors[] = 'Row '.($i + 2).': Invalid amount';
+
                 continue;
             }
 
-            $currency     = strtoupper(trim($row[3] ?? 'GHS'));
-            $exchangeRate = match($currency) {
-                'USD' => 15.5, 'GBP' => 19.5, 'EUR' => 17.0, default => 1,
-            };
+            $currency = strtoupper(trim($row[3] ?? 'GHS'));
+            $exchangeRate = config("finance.currencies.{$currency}.rate", 1);
 
             IncomeRecord::create([
-                'member_id'      => $member?->id,
-                'category'       => strtolower(trim($row[1] ?? 'tithe')),
-                'amount'         => $amount,
-                'currency'       => $currency,
-                'amount_ghs'     => $amount * $exchangeRate,
-                'exchange_rate'  => $exchangeRate,
-                'payment_date'   => !empty($row[5]) ? date('Y-m-d', strtotime($row[5])) : today()->toDateString(),
+                'member_id' => $member?->id,
+                'category' => strtolower(trim($row[1] ?? 'tithe')),
+                'amount' => $amount,
+                'currency' => $currency,
+                'amount_ghs' => $amount * $exchangeRate,
+                'exchange_rate' => $exchangeRate,
+                'payment_date' => ! empty($row[5]) ? date('Y-m-d', strtotime($row[5])) : today()->toDateString(),
                 'payment_method' => strtolower(str_replace(' ', '_', trim($row[4] ?? 'cash'))),
-                'reference'      => $row[6] ?? null,
-                'notes'          => $row[7] ?? null,
-                'status'         => 'confirmed',
-                'recorded_by'    => auth()->id(),
+                'reference' => $row[6] ?? null,
+                'notes' => $row[7] ?? null,
+                'status' => 'confirmed',
+                'recorded_by' => auth()->id(),
             ]);
             $count++;
         }
 
         $msg = "{$count} records imported successfully.";
-        if ($errors) $msg .= ' Errors: ' . implode(', ', $errors);
+        if ($errors) {
+            $msg .= ' Errors: '.implode(', ', $errors);
+        }
 
         return back()->with('success', $msg);
     }
@@ -656,53 +688,58 @@ class FinanceController extends Controller
     // ── Sunday tithes bulk entry ──────────────────────────────
     public function sundayTithes(Request $request)
     {
-        $events  = Event::orderBy('event_date', 'desc')->take(20)->get();
+        $events = Event::orderBy('event_date', 'desc')->take(20)->get();
         $members = Member::where('status', 'active')
             ->orderBy('first_name')->get();
 
         $activeEvent = Event::where('status', 'active')->latest()->first();
+        $bankAccounts = BankAccount::where('is_active', true)->orderBy('name')->get();
 
-        return view('admin.finance.sunday-tithes', compact('events', 'members', 'activeEvent'));
+        return view('admin.finance.sunday-tithes', compact('events', 'members', 'activeEvent', 'bankAccounts'));
     }
 
     public function storeSundayTithes(Request $request)
     {
         $request->validate([
-            'event_id'       => 'nullable|exists:events,id',
-            'payment_date'   => 'required|date',
+            'event_id' => 'nullable|exists:events,id',
+            'payment_date' => 'required|date',
             'payment_method' => 'required|string',
-            'currency'       => 'required|string',
-            'exchange_rate'  => 'required|numeric|min:0.0001',
-            'entries'        => 'required|array|min:1',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'currency' => 'required|string',
+            'exchange_rate' => 'required|numeric|min:0.0001',
+            'entries' => 'required|array|min:1',
             'entries.*.member_id' => 'nullable|exists:members,id',
-            'entries.*.amount'    => 'required|numeric|min:0.01',
-            'entries.*.category'  => 'required|string',
+            'entries.*.amount' => 'required|numeric|min:0.01',
+            'entries.*.category' => 'required|string',
         ]);
 
-        $count    = 0;
-        $total    = 0;
+        $count = 0;
+        $total = 0;
         $currency = $request->currency;
-        $rate     = $request->exchange_rate;
+        $rate = $request->exchange_rate;
 
         foreach ($request->entries as $entry) {
-            if (empty($entry['amount']) || $entry['amount'] <= 0) continue;
+            if (empty($entry['amount']) || $entry['amount'] <= 0) {
+                continue;
+            }
 
             IncomeRecord::updateOrCreate(
                 [
-                    'member_id'    => $entry['member_id'] ?? null,
-                    'category'     => $entry['category'],
+                    'member_id' => $entry['member_id'] ?? null,
+                    'category' => $entry['category'],
                     'payment_date' => $request->payment_date,
-                    'currency'     => $currency,
-                    'event_id'     => $request->event_id ?? null,
+                    'currency' => $currency,
+                    'event_id' => $request->event_id ?? null,
                 ],
                 [
-                    'amount'         => $entry['amount'],
-                    'exchange_rate'  => $rate,
-                    'amount_ghs'     => $entry['amount'] * $rate,
+                    'amount' => $entry['amount'],
+                    'exchange_rate' => $rate,
+                    'amount_ghs' => $entry['amount'] * $rate,
                     'payment_method' => $request->payment_method,
-                    'notes'          => $entry['notes'] ?? null,
-                    'status'         => 'confirmed',
-                    'recorded_by'    => auth()->id(),
+                    'bank_account_id' => $request->bank_account_id,
+                    'notes' => $entry['notes'] ?? null,
+                    'status' => 'confirmed',
+                    'recorded_by' => auth()->id(),
                 ]
             );
 
@@ -711,7 +748,7 @@ class FinanceController extends Controller
         }
 
         return back()->with('success',
-            "{$count} tithe records saved. Total: GH₵ " . number_format($total, 2)
+            "{$count} tithe records saved. Total: GH₵ ".number_format($total, 2)
         );
     }
 }

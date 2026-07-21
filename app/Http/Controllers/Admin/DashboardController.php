@@ -3,40 +3,62 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AbsenteeFlag;
 use App\Models\Attendance;
 use App\Models\Event;
+use App\Models\FinancialRequest;
 use App\Models\Member;
 use App\Models\Visitor;
-use App\Models\AbsenteeFlag;
-use App\Models\NotificationLog;
-use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     public function index()
     {
+        // ── Pending financial request approvals for this user ──
+        $pendingApprovals = collect();
+        $isPastor = auth()->user()->hasRole('pastor');
+        $isSuperAdmin = auth()->user()->isFinanceChairman();
+
+        if ($isPastor || $isSuperAdmin) {
+            $query = FinancialRequest::with('requestedBy')->where('status', 'pending');
+
+            if ($isPastor && $isSuperAdmin) {
+                $query->where(fn ($q) => $q->whereNull('pastor_approved_at')->orWhereNull('super_admin_approved_at'));
+            } elseif ($isPastor) {
+                $query->whereNull('pastor_approved_at');
+            } else {
+                $query->whereNull('super_admin_approved_at');
+            }
+
+            $pendingApprovalsCount = (clone $query)->count();
+            $pendingApprovals = $query->latest('request_date')->take(5)->get();
+        } else {
+            $pendingApprovalsCount = 0;
+        }
+
         // ── Summary stats ──────────────────────────────────
         $stats = [
-            'total_members'       => Member::count(),
-            'active_members'      => Member::where('status', 'active')->count(),
-            'total_events'        => Event::count(),
-            'total_checkins'      => Attendance::count(),
-            'checkins_today'      => Attendance::whereDate('checked_in_at', today())->count(),
-            'checkins_this_week'  => Attendance::whereBetween('checked_in_at', [
-                now()->startOfWeek(), now()->endOfWeek()
+            'total_members' => Member::count(),
+            'active_members' => Member::where('status', 'active')->count(),
+            'total_events' => Event::count(),
+            'total_checkins' => Attendance::count(),
+            'checkins_today' => Attendance::whereDate('checked_in_at', today())->count(),
+            'checkins_this_week' => Attendance::whereBetween('checked_in_at', [
+                now()->startOfWeek(), now()->endOfWeek(),
             ])->count(),
             'checkins_this_month' => Attendance::whereMonth('checked_in_at', now()->month)
                 ->whereYear('checked_in_at', now()->year)->count(),
-            'total_visitors'      => Visitor::count(),
+            'total_visitors' => Visitor::count(),
             'visitors_this_month' => Visitor::whereMonth('visited_at', now()->month)
                 ->whereYear('visited_at', now()->year)->count(),
-            'flagged_absentees'   => AbsenteeFlag::where('status', 'flagged')->count(),
-            'active_event'        => Event::where('status', 'active')->latest()->first(),
+            'flagged_absentees' => AbsenteeFlag::where('status', 'flagged')->count(),
+            'active_event' => Event::where('status', 'active')->latest()->first(),
         ];
 
         // ── Monthly attendance trend (last 12 months) ──────
         $monthlyAttendance = collect(range(11, 0))->map(function ($i) {
             $date = now()->subMonths($i);
+
             return [
                 'month' => $date->format('M Y'),
                 'count' => Attendance::whereMonth('checked_in_at', $date->month)
@@ -47,6 +69,7 @@ class DashboardController extends Controller
         // ── Monthly new members (last 12 months) ───────────
         $monthlyMembers = collect(range(11, 0))->map(function ($i) {
             $date = now()->subMonths($i);
+
             return [
                 'month' => $date->format('M Y'),
                 'count' => Member::whereMonth('created_at', $date->month)
@@ -57,6 +80,7 @@ class DashboardController extends Controller
         // ── Monthly visitors (last 12 months) ──────────────
         $monthlyVisitors = collect(range(11, 0))->map(function ($i) {
             $date = now()->subMonths($i);
+
             return [
                 'month' => $date->format('M Y'),
                 'count' => Visitor::whereMonth('visited_at', $date->month)
@@ -68,7 +92,7 @@ class DashboardController extends Controller
         $checkinMethods = Attendance::selectRaw('checkin_method, COUNT(*) as total')
             ->groupBy('checkin_method')
             ->get()
-            ->map(fn($r) => [
+            ->map(fn ($r) => [
                 'label' => ucwords(str_replace('_', ' ', $r->checkin_method)),
                 'count' => $r->total,
             ]);
@@ -76,7 +100,7 @@ class DashboardController extends Controller
         // ── Event type breakdown ───────────────────────────
         $eventTypes = Event::selectRaw('type, COUNT(*) as total')
             ->groupBy('type')->get()
-            ->map(fn($r) => [
+            ->map(fn ($r) => [
                 'label' => ucfirst($r->type),
                 'count' => $r->total,
             ]);
@@ -86,7 +110,7 @@ class DashboardController extends Controller
             ->selectRaw('events.type, COUNT(attendance.id) as total')
             ->groupBy('events.type')
             ->get()
-            ->map(fn($r) => [
+            ->map(fn ($r) => [
                 'label' => ucfirst($r->type),
                 'count' => $r->total,
             ]);
@@ -106,7 +130,7 @@ class DashboardController extends Controller
         $genderBreakdown = Member::where('status', 'active')
             ->selectRaw('gender, COUNT(*) as total')
             ->groupBy('gender')->get()
-            ->map(fn($r) => [
+            ->map(fn ($r) => [
                 'label' => ucfirst($r->gender ?? 'Unknown'),
                 'count' => $r->total,
             ]);
@@ -114,9 +138,10 @@ class DashboardController extends Controller
         // ── Weekly attendance heatmap (last 8 weeks) ───────
         $weeklyHeatmap = collect(range(7, 0))->map(function ($i) {
             $start = now()->subWeeks($i)->startOfWeek();
-            $end   = now()->subWeeks($i)->endOfWeek();
+            $end = now()->subWeeks($i)->endOfWeek();
+
             return [
-                'week'  => $start->format('d M'),
+                'week' => $start->format('d M'),
                 'count' => Attendance::whereBetween('checked_in_at', [$start, $end])->count(),
             ];
         });
@@ -142,7 +167,9 @@ class DashboardController extends Controller
             'genderBreakdown',
             'weeklyHeatmap',
             'recentCheckins',
-            'nextEvents'
+            'nextEvents',
+            'pendingApprovals',
+            'pendingApprovalsCount'
         ));
     }
 }

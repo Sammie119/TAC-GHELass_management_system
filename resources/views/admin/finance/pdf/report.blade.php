@@ -19,12 +19,20 @@
         .expense-header th { background: #dc2626; color: white; }
         .total-row td { font-weight: 700; background: #f9fafb; }
         .footer { margin-top: 20px; font-size: 10px; color: #9ca3af; text-align: right; border-top: 1px solid #e5e7eb; padding-top: 10px; }
+        .letterhead-logo { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; margin: 0 auto 8px; display: block; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1>Church Finance Report</h1>
+    @if(config('church.logo_path'))
+        <img class="letterhead-logo" src="{{ Storage::disk('public')->path(config('church.logo_path')) }}" alt="Logo">
+    @endif
+    <h1>{{ config('app.name') }}</h1>
+    @if(config('church.address'))
+        <p class="sub">{{ config('church.address') }}</p>
+    @endif
+    <p class="sub" style="margin-top:6px;">Finance Report</p>
     <p class="sub">Period: {{ \Carbon\Carbon::parse($from)->format('d M Y') }} — {{ \Carbon\Carbon::parse($to)->format('d M Y') }}</p>
     <p class="sub">Generated: {{ now()->format('d M Y, h:i A') }}</p>
 </div>

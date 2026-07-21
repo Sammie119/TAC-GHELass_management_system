@@ -33,6 +33,8 @@ return array (
     'pledge' => 'Pledge',
     'project' => 'Project',
     'other' => 'Other',
+    'weekly_income' => 'Weekly Income',
+    'children' => 'Children Ministry',
   ),
   'expense_categories' =>
   array (
@@ -42,6 +44,7 @@ return array (
     'events' => 'Events',
     'outreach' => 'Outreach',
     'other' => 'Other',
+    'petty_cash_float' => 'Petty Cash Float',
   ),
   'payment_methods' =>
   array (

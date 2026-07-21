@@ -3,100 +3,54 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ChurchSetting;
+use App\Models\DropdownOption;
 use App\Services\SMSOnlineGhService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 
 class SettingsController extends Controller
 {
     public function index()
     {
-        $departments        = config('departments');
-        $incomeCategories   = config('finance.income_categories');
-        $expenseCategories  = config('finance.expense_categories');
+        $dropdownCount = DropdownOption::count();
+        $churchSetting = ChurchSetting::current();
 
-        return view('admin.settings.index', compact(
-            'departments', 'incomeCategories', 'expenseCategories'
-        ));
+        return view('admin.settings.index', compact('dropdownCount', 'churchSetting'));
     }
 
-    public function updateDepartments(Request $request)
+    public function updateChurchInfo(Request $request)
     {
-        $request->validate([
-            'departments'   => 'required|array|min:1',
-            'departments.*' => 'required|string|max:100',
+        $validated = $request->validate([
+            'name' => 'required|string|max:150',
+            'address' => 'nullable|string|max:1000',
+            'logo' => 'nullable|image|max:2048',
         ]);
 
-        $items = array_values(array_filter(array_map('trim', $request->departments)));
-        $this->writeConfig('departments', $items, 'array');
+        $churchSetting = ChurchSetting::current();
 
-        return back()->with('success', 'Departments updated successfully.');
-    }
-
-    public function updateIncomeCategories(Request $request)
-    {
-        $request->validate([
-            'keys'   => 'required|array|min:1',
-            'keys.*' => 'required|string|max:50',
-            'labels' => 'required|array|min:1',
-            'labels.*' => 'required|string|max:100',
-        ]);
-
-        $categories = [];
-        foreach ($request->keys as $i => $key) {
-            $key = strtolower(preg_replace('/[^a-z0-9_]/', '_', trim($key)));
-            $categories[$key] = trim($request->labels[$i]);
+        if ($request->hasFile('logo')) {
+            if ($churchSetting->logo_path && Storage::disk('public')->exists($churchSetting->logo_path)) {
+                Storage::disk('public')->delete($churchSetting->logo_path);
+            }
+            $validated['logo_path'] = $request->file('logo')->store('church', 'public');
         }
 
-        $this->updateFinanceConfig('income_categories', $categories);
-        return back()->with('success', 'Income categories updated.');
-    }
+        unset($validated['logo']);
 
-    public function updateExpenseCategories(Request $request)
-    {
-        $request->validate([
-            'keys'    => 'required|array|min:1',
-            'keys.*'  => 'required|string|max:50',
-            'labels'  => 'required|array|min:1',
-            'labels.*'=> 'required|string|max:100',
-        ]);
+        $churchSetting->fill($validated);
+        $churchSetting->save();
 
-        $categories = [];
-        foreach ($request->keys as $i => $key) {
-            $key = strtolower(preg_replace('/[^a-z0-9_]/', '_', trim($key)));
-            $categories[$key] = trim($request->labels[$i]);
-        }
-
-        $this->updateFinanceConfig('expense_categories', $categories);
-        return back()->with('success', 'Expense categories updated.');
-    }
-
-    private function writeConfig(string $filename, array $data, string $type = 'array'): void
-    {
-        $export = var_export($data, true);
-        $content = "<?php\n\nreturn {$export};\n";
-        File::put(config_path("{$filename}.php"), $content);
-        \Artisan::call('config:clear');
-    }
-
-    private function updateFinanceConfig(string $key, array $data): void
-    {
-        $config = config('finance');
-        $config[$key] = $data;
-
-        $export  = var_export($config, true);
-        $content = "<?php\n\nreturn {$export};\n";
-        File::put(config_path('finance.php'), $content);
-        \Artisan::call('config:clear');
+        return back()->with('success', 'Church information updated.');
     }
 
     public function checkSMSBalance()
     {
-        $balance = SMSOnlineGhService::checkSMSBalance(); //1250; // Fetch from SMS provider API
+        $balance = SMSOnlineGhService::checkSMSBalance(); // 1250; // Fetch from SMS provider API
 
         return response()->json([
             'success' => true,
-            'balance' => $balance
+            'balance' => $balance,
         ]);
     }
 }

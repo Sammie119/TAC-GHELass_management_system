@@ -64,6 +64,7 @@
                             <option value="absentee_followup">💙 Absentee follow-up</option>
                             <option value="birthday">🎂 Birthday message</option>
                             <option value="custom">✏️ Custom message</option>
+                            <option value="visitor_message">🙋 Message today's visitors</option>
                         </select>
                     </div>
 
@@ -95,8 +96,15 @@
                         <p style="font-size:12px;color:#9ca3af;margin-top:4px;" id="char-count">0 / 160</p>
                     </div>
 
+                    {{-- Visitor audience note --}}
+                    <div id="visitor-note" style="margin-bottom:14px;display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;">
+                        <p style="font-size:13px;color:#1d4ed8;">
+                            {{ $visitorsToday }} visitor(s) checked in today will receive this message.
+                        </p>
+                    </div>
+
                     {{-- Members --}}
-                    <div style="margin-bottom:16px;">
+                    <div id="members-field" style="margin-bottom:16px;">
                         <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px;">
                             Send to
                         </label>
@@ -209,12 +217,13 @@
                                         @case('event_reminder')    📅 @break
                                         @case('absentee_followup') 💙 @break
                                         @case('checkin_confirmation') ✓ @break
+                                        @case('visitor_message')   🛎️ @break
                                         @default                   ✉️
                                     @endswitch
                                 </div>
                                 <div style="flex:1;min-width:0;">
                                     <p style="font-size:13px;font-weight:500;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                                        {{ $log->member->full_name ?? '—' }}
+                                        {{ $log->member->full_name ?? ($log->visitor->full_name ?? '—') }}
                                     </p>
                                     <p style="font-size:11px;color:#9ca3af;">
                                         {{ ucwords(str_replace('_', ' ', $log->type)) }} ·
@@ -246,8 +255,10 @@
     <script>
         function toggleFields() {
             const type = document.getElementById('notif-type').value;
-            document.getElementById('event-field').style.display  = type === 'event_reminder' ? 'block' : 'none';
-            document.getElementById('custom-field').style.display = type === 'custom' ? 'block' : 'none';
+            document.getElementById('event-field').style.display   = type === 'event_reminder' ? 'block' : 'none';
+            document.getElementById('custom-field').style.display  = (type === 'custom' || type === 'visitor_message') ? 'block' : 'none';
+            document.getElementById('visitor-note').style.display  = type === 'visitor_message' ? 'block' : 'none';
+            document.getElementById('members-field').style.display = type === 'visitor_message' ? 'none' : 'block';
         }
 
         function selectAllMembers(checked) {

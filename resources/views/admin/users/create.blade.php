@@ -100,16 +100,20 @@
                                            {{ old('role') === $role->name ? 'checked' : '' }}
                                            style="margin-top:2px;accent-color:#2563eb;">
                                     <div>
-                                        <p style="font-size:14px;font-weight:500;color:#111827;">{{ ucfirst($role->name) }}</p>
+                                        <p style="font-size:14px;font-weight:500;color:#111827;">{{ ucwords(str_replace('_', ' ', $role->name)) }}</p>
                                         <p style="font-size:12px;color:#9ca3af;margin-top:2px;">
                                             @if($role->name === 'admin')
                                                 Full access to all modules
                                             @elseif($role->name === 'usher')
                                                 Can manage check-ins and visitors
                                             @elseif($role->name === 'finance')
-                                                Can manage all income and expences
+                                                Can manage all income and expenses
                                             @elseif($role->name === 'membership')
                                                 Can manage Membership and cell groups
+                                            @elseif($role->name === 'pastor')
+                                                Full access, except Settings, Users & Roles, and Notifications
+                                            @elseif($role->name === 'finance_chairman')
+                                                Same access as Finance, plus final financial request approval
                                             @else
                                                 Basic member access only
                                             @endif

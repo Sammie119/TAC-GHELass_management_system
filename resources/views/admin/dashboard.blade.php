@@ -38,6 +38,49 @@
         </div>
     @endif
 
+    {{-- ── Pending financial request approvals ─────────────── --}}
+    @if($pendingApprovalsCount > 0)
+        <div style="background:white;border:1px solid #fde68a;border-left:4px solid #d97706;border-radius:12px;padding:16px 20px;margin-bottom:1.5rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:34px;height:34px;background:#fef3c7;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <svg style="width:18px;height:18px;color:#d97706;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p style="font-size:14px;font-weight:600;color:#111827;">
+                            {{ $pendingApprovalsCount }} financial {{ $pendingApprovalsCount === 1 ? 'request' : 'requests' }} awaiting your approval
+                        </p>
+                        <p style="font-size:12px;color:#9ca3af;">Requires your sign-off before a PV can be generated</p>
+                    </div>
+                </div>
+                <a href="{{ route('admin.financial-requests.index', ['status' => 'pending']) }}"
+                   style="background:#d97706;color:white;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;">
+                    View all →
+                </a>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                @foreach($pendingApprovals as $request)
+                    <a href="{{ route('admin.financial-requests.show', $request) }}"
+                       style="display:flex;justify-content:space-between;align-items:center;background:#fffbeb;border-radius:8px;padding:10px 14px;text-decoration:none;">
+                        <div>
+                            <p style="font-size:13px;font-weight:500;color:#111827;">{{ $request->description }}</p>
+                            <p style="font-size:11px;color:#9ca3af;">
+                                {{ $request->requestedBy?->name ?? '—' }} · {{ $request->request_date->format('d M Y') }}
+                            </p>
+                        </div>
+                        <span style="font-size:13px;font-weight:700;color:#d97706;">
+                            {{ $request->currency }} {{ number_format($request->amount, 2) }}
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- ── Top stats ────────────────────────────────────────── --}}
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:1.5rem;">
 

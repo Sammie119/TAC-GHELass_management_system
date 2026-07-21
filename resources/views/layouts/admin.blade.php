@@ -24,12 +24,16 @@
 
         {{-- Logo --}}
         <div class="h-16 flex items-center px-6 border-b border-gray-100">
-            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                </svg>
-            </div>
+            @if(config('church.logo_url'))
+                <img src="{{ config('church.logo_url') }}" class="w-8 h-8 rounded-lg object-cover mr-3" alt="Logo">
+            @else
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                </div>
+            @endif
             <span class="font-semibold text-gray-800 text-sm">{{ config('app.name', 'Church Management System') }}</span>
         </div>
 
@@ -37,7 +41,7 @@
         <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
 
             {{-- Dashboard (admin only) --}}
-            @hasanyrole('admin|membership|finance|usher')
+            @hasanyrole('admin|membership|finance|usher|pastor|finance_chairman')
                 <a href="{{ route('admin.dashboard') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
                   {{ request()->routeIs('admin.dashboard')
@@ -52,10 +56,19 @@
             @endhasanyrole
 
             {{-- Members (admin only) --}}
-            @hasanyrole('admin|membership')
-            <div class="pt-3 pb-1">
-                <p class="px-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Membership</p>
-            </div>
+            @hasanyrole('admin|membership|pastor')
+            @php
+                $membershipActive = request()->routeIs('admin.members.*', 'admin.visitors.*', 'admin.absentees.*', 'admin.souls.*', 'admin.cells.*');
+            @endphp
+            <div x-data="{ open: {{ $membershipActive ? 'true' : 'false' }} }" class="pt-3 pb-1">
+            <button @click="open = !open" type="button"
+                    class="w-full flex items-center justify-between px-3 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600">
+                <span>Membership</span>
+                <svg class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="open" x-transition class="space-y-1 mt-1">
 
             <a href="{{ route('admin.members.index') }}"
                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
@@ -128,14 +141,26 @@
                 </svg>
                 Cell Groups
             </a>
+            </div>
+            </div>
             @endhasanyrole
 
-            {{-- Events (admin only) --}}
-            @role('admin')
-            <div class="pt-3 pb-1">
-                <p class="px-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Attendance</p>
-            </div>
+            {{-- Attendance (admin, usher, membership) --}}
+            @hasanyrole('admin|usher|membership|pastor')
+            @php
+                $attendanceActive = request()->routeIs('admin.events.*', 'admin.checkin.*', 'admin.attendance.*');
+            @endphp
+            <div x-data="{ open: {{ $attendanceActive ? 'true' : 'false' }} }" class="pt-3 pb-1">
+            <button @click="open = !open" type="button"
+                    class="w-full flex items-center justify-between px-3 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600">
+                <span>Attendance</span>
+                <svg class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="open" x-transition class="space-y-1 mt-1">
 
+            @hasanyrole('admin|pastor')
             <a href="{{ route('admin.events.index') }}"
                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
               {{ request()->routeIs('admin.events.*')
@@ -147,10 +172,20 @@
                 </svg>
                 Events
             </a>
-            @endrole
+            @endhasanyrole
 
-            {{-- Check-in (admin + usher) --}}
-            @hasanyrole('admin|usher|membership')
+            <a href="{{ route('admin.attendance.index') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
+              {{ request()->routeIs('admin.attendance.*')
+                 ? 'bg-blue-50 text-blue-700 font-medium'
+                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-3.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a4 4 0 10-4-4"/>
+                </svg>
+                Attendance
+            </a>
+
             <a href="{{ route('admin.checkin.index') }}"
                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
               {{ request()->routeIs('admin.checkin.*')
@@ -162,6 +197,9 @@
                 </svg>
                 Check-in
             </a>
+
+            </div>
+            </div>
             @endhasanyrole
 
             @role('usher')
@@ -179,10 +217,19 @@
             @endrole
 
             {{-- Finance (admin + finance role) --}}
-            @hasanyrole('admin|finance')
-            <div class="pt-3 pb-1">
-                <p class="px-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Finance</p>
-            </div>
+            @hasanyrole('admin|finance|pastor|finance_chairman')
+            @php
+                $financeActive = request()->routeIs('admin.finance.*', 'admin.pledges.*', 'admin.petty-cash.*', 'admin.budgets.*', 'admin.financial-requests.*', 'admin.cash-book.*', 'admin.bank-accounts.*');
+            @endphp
+            <div x-data="{ open: {{ $financeActive ? 'true' : 'false' }} }" class="pt-3 pb-1">
+            <button @click="open = !open" type="button"
+                    class="w-full flex items-center justify-between px-3 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600">
+                <span>Finance</span>
+                <svg class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="open" x-transition class="space-y-1 mt-1">
 
             <a href="{{ route('admin.finance.index') }}"
                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
@@ -279,13 +326,84 @@
                 </svg>
                 Finance Report
             </a>
+
+            <a href="{{ route('admin.petty-cash.index') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
+                  {{ request()->routeIs('admin.petty-cash.*')
+                     ? 'bg-green-50 text-green-700 font-medium'
+                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M3 12a9 9 0 1018 0 9 9 0 00-18 0z"/>
+                </svg>
+                Petty Cash
+            </a>
+
+            <a href="{{ route('admin.budgets.index') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
+                  {{ request()->routeIs('admin.budgets.*')
+                     ? 'bg-green-50 text-green-700 font-medium'
+                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M9 7h6m-6 4h6m-6 4h4M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/>
+                </svg>
+                Budgets
+            </a>
+
+            <a href="{{ route('admin.financial-requests.index') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
+                  {{ request()->routeIs('admin.financial-requests.*')
+                     ? 'bg-green-50 text-green-700 font-medium'
+                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Financial Requests
+            </a>
+
+            <a href="{{ route('admin.cash-book.index') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
+                  {{ request()->routeIs('admin.cash-book.*')
+                     ? 'bg-green-50 text-green-700 font-medium'
+                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M3 10h18M7 15h1m4 0h1m-9 4h16a1 1 0 001-1V6a1 1 0 00-1-1H4a1 1 0 00-1 1v12a1 1 0 001 1z"/>
+                </svg>
+                Cash Book
+            </a>
+
+            <a href="{{ route('admin.bank-accounts.index') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
+                  {{ request()->routeIs('admin.bank-accounts.*')
+                     ? 'bg-green-50 text-green-700 font-medium'
+                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M3 21h18M4 21V9l8-6 8 6v12M9 21v-6h6v6"/>
+                </svg>
+                Bank Accounts
+            </a>
+            </div>
+            </div>
             @endhasanyrole
 
             {{-- Reports section (admin only) --}}
-            @hasanyrole('admin|membership')
-            <div class="pt-3 pb-1">
-                <p class="px-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Reports</p>
-            </div>
+            @hasanyrole('admin|membership|pastor')
+            @php
+                $reportsActive = request()->routeIs('admin.reports.*');
+            @endphp
+            <div x-data="{ open: {{ $reportsActive ? 'true' : 'false' }} }" class="pt-3 pb-1">
+            <button @click="open = !open" type="button"
+                    class="w-full flex items-center justify-between px-3 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600">
+                <span>Reports</span>
+                <svg class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="open" x-transition class="space-y-1 mt-1">
 
             <a href="{{ route('admin.reports.index') }}"
                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
@@ -322,13 +440,24 @@
                 </svg>
                 New Souls Report
             </a>
+            </div>
+            </div>
             @endhasanyrole
 
             {{-- Settings section (admin only) --}}
             @role('admin')
-            <div class="pt-3 pb-1">
-                <p class="px-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Settings</p>
-            </div>
+            @php
+                $settingsActive = request()->routeIs('admin.users.*', 'admin.notifications.*', 'admin.settings.*');
+            @endphp
+            <div x-data="{ open: {{ $settingsActive ? 'true' : 'false' }} }" class="pt-3 pb-1">
+            <button @click="open = !open" type="button"
+                    class="w-full flex items-center justify-between px-3 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600">
+                <span>Settings</span>
+                <svg class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="open" x-transition class="space-y-1 mt-1">
 
             <a href="{{ route('admin.users.index') }}"
                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
@@ -370,6 +499,8 @@
                     Settings
                 </a>
             @endif
+            </div>
+            </div>
             @endrole
 
         </nav>
@@ -423,7 +554,7 @@
     </aside>
 
     {{-- ===== MAIN AREA ===== --}}
-    <div class="flex-1 flex flex-col lg:ml-64 min-h-screen">
+    <div class="flex-1 flex flex-col lg:ml-64 min-h-screen min-w-0">
 
         {{-- Top navbar --}}
         <header class="h-16 bg-white border-b border-gray-200 flex items-center px-4 lg:px-6 gap-4 sticky top-0 z-40">

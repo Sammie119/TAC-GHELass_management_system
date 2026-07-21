@@ -131,6 +131,17 @@
                                        style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;box-sizing:border-box;">
                             </div>
 
+                            <div style="margin-bottom:14px;">
+                                <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:5px;">Bank account</label>
+                                <select name="bank_account_id"
+                                        style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+                                    <option value="">— None / Cash —</option>
+                                    @foreach($bankAccounts as $account)
+                                        <option value="{{ $account->id }}">{{ $account->bank_name }} — {{ $account->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
                             <button type="submit"
                                     style="width:100%;background:#16a34a;color:white;padding:10px;border-radius:8px;font-size:14px;font-weight:600;border:none;cursor:pointer;">
                                 Record payment

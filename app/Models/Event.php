@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class Event extends Model
@@ -29,6 +29,11 @@ class Event extends Model
     public function attendance()
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    public function headcount()
+    {
+        return $this->hasOne(AttendanceHeadcount::class);
     }
 
     public function visitors()

@@ -82,6 +82,17 @@
                     </select>
                 </div>
 
+                <div>
+                    <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:5px;">Bank account</label>
+                    <select id="global-bank-account"
+                            style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:9px 12px;font-size:14px;outline:none;">
+                        <option value="">— None / Cash —</option>
+                        @foreach($bankAccounts as $account)
+                            <option value="{{ $account->id }}">{{ $account->bank_name }} — {{ $account->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
             </div>
         </div>
 
@@ -168,6 +179,7 @@
         <input type="hidden" name="currency"       id="f-currency">
         <input type="hidden" name="exchange_rate"  id="f-exchange-rate">
         <input type="hidden" name="payment_method" id="f-payment-method">
+        <input type="hidden" name="bank_account_id" id="f-bank-account-id">
         <div id="f-entries"></div>
     </form>
 
@@ -176,7 +188,7 @@
         const categories = @json(config('finance.income_categories'));
         const methods    = @json(config('finance.payment_methods'));
         const currencies = @json(array_keys(config('finance.currencies')));
-        const rates      = { GHS: 1, USD: 15.5, GBP: 19.5, EUR: 17.0 };
+        const rates      = @json(collect(config('finance.currencies'))->map(fn($c) => $c['rate'] ?? 1));
         let searchTimers = {};
 
         // ── Add rows ────────────────────────────────────────────
@@ -386,6 +398,7 @@
             document.getElementById('f-currency').value      = document.getElementById('global-currency').value;
             document.getElementById('f-exchange-rate').value = document.getElementById('global-rate').value;
             document.getElementById('f-payment-method').value= document.getElementById('global-method').value;
+            document.getElementById('f-bank-account-id').value = document.getElementById('global-bank-account').value;
 
             // Build entries
             const container = document.getElementById('f-entries');

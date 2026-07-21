@@ -7,12 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 class NotificationLog extends Model
 {
     protected $fillable = [
-        'member_id', 'type', 'channel',
+        'member_id', 'visitor_id', 'type', 'channel',
         'sms_sent', 'email_sent', 'message',
     ];
 
     public function member()
     {
         return $this->belongsTo(Member::class);
+    }
+
+    public function visitor()
+    {
+        return $this->belongsTo(Visitor::class);
     }
 }
