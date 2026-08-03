@@ -108,11 +108,14 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
             Route::get('events/{event}/qr', [EventController::class, 'downloadQr'])->name('events.qr');
         });
 
+    // Member search — shared lookup used by Check-in and Finance member pickers
+    Route::middleware(RoleMiddleware::using('admin|usher|membership|pastor|finance|finance_chairman'))
+        ->get('/checkin/search', [CheckinController::class, 'search'])->name('checkin.search');
+
     // Check-in — admin + usher + membership + pastor
     Route::middleware(RoleMiddleware::using('admin|usher|membership|pastor'))
         ->group(function () {
             Route::get('/checkin', [CheckinController::class, 'index'])->name('checkin.index');
-            Route::get('/checkin/search', [CheckinController::class, 'search'])->name('checkin.search');
             Route::post('/checkin/process', [CheckinController::class, 'checkin'])->name('checkin.process');
             Route::post('/checkin/qr', [CheckinController::class, 'scanQr'])->name('checkin.qr');
             Route::delete('/checkin/remove', [CheckinController::class, 'removeCheckin'])->name('checkin.remove');
