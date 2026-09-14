@@ -146,6 +146,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
             Route::get('/reports/souls/export/excel', [ReportController::class, 'exportSoulsExcel'])->name('reports.souls.excel');
         });
 
+    // Form A — also open to the finance role, unlike the general reports group above
+    Route::middleware(RoleMiddleware::using('admin|pastor|finance|finance_chairman'))
+        ->group(function () {
+            Route::get('/reports/form-a', [ReportController::class, 'formA'])->name('reports.form-a');
+            Route::get('/reports/form-a/pdf', [ReportController::class, 'exportFormAPdf'])->name('reports.form-a.pdf');
+        });
+
     // Finance — admin + finance + pastor
     Route::middleware(RoleMiddleware::using('admin|finance|pastor|finance_chairman'))
         ->group(function () {

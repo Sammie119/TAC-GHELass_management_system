@@ -10,6 +10,7 @@ use App\Models\Attendance;
 use App\Models\Event;
 use App\Models\Member;
 use App\Models\Visitor;
+use App\Services\FormAReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -328,5 +329,31 @@ class ReportController extends Controller
             new \App\Exports\SoulsExport($from, $to),
             "souls-report-{$from}-to-{$to}.xlsx"
         );
+    }
+
+    // ── Form A — Monthly Tithes Remittances Statement ─────────
+    public function formA(Request $request, FormAReportService $service)
+    {
+        [$defaultYear, $defaultMonth] = $service->defaultYearMonth();
+        $year = (int) ($request->year ?? $defaultYear);
+        $month = (int) ($request->month ?? $defaultMonth);
+
+        $data = $service->build($year, $month);
+
+        return view('admin.reports.form-a', $data);
+    }
+
+    // ── Export Form A PDF ──────────────────────────────────────
+    public function exportFormAPdf(Request $request, FormAReportService $service)
+    {
+        [$defaultYear, $defaultMonth] = $service->defaultYearMonth();
+        $year = (int) ($request->year ?? $defaultYear);
+        $month = (int) ($request->month ?? $defaultMonth);
+
+        $data = $service->build($year, $month);
+
+        $pdf = Pdf::loadView('admin.reports.pdf.form-a', $data)->setPaper('a4', 'portrait');
+
+        return $pdf->download("form-a-{$data['month_label']}-{$year}.pdf");
     }
 }

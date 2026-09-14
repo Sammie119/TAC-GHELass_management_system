@@ -201,6 +201,26 @@
         </a>
     </div>
 
+    {{-- Form A report link --}}
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:40px;height:40px;background:#dcfce7;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg style="width:20px;height:20px;color:#16a34a;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <div>
+                <p style="font-size:14px;font-weight:600;color:#166534;">Form A — Monthly Tithes Remittances Statement</p>
+                <p style="font-size:12px;color:#9ca3af;">Sunday-by-Sunday tithes/offerings breakdown for headquarters remittance — export to PDF</p>
+            </div>
+        </div>
+        <a href="{{ route('admin.reports.form-a') }}"
+           style="background:#16a34a;color:white;padding:9px 20px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;white-space:nowrap;">
+            View Form A →
+        </a>
+    </div>
+
     {{-- Bottom: Event attendance table + Top members --}}
     <div style="display:grid;gap:24px;">
         <style>@media(min-width:1024px){.bottom-grid{grid-template-columns:2fr 1fr !important;}}</style>
