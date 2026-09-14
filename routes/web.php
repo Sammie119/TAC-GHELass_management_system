@@ -176,6 +176,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
             Route::get('/finance/export/excel', [FinanceController::class, 'exportExcel'])->name('finance.export.excel');
             Route::get('/finance/sunday-tithes', [FinanceController::class, 'sundayTithes'])->name('finance.sunday-tithes');
             Route::post('/finance/sunday-tithes', [FinanceController::class, 'storeSundayTithes'])->name('finance.sunday-tithes.store');
+            Route::get('/finance/sunday-tithes/template', [FinanceController::class, 'downloadSundayTithesTemplate'])->name('finance.sunday-tithes.template');
+            Route::post('/finance/sunday-tithes/upload', [FinanceController::class, 'uploadSundayTithesExcel'])->name('finance.sunday-tithes.upload');
 
             Route::get('/pledges', [PledgeController::class, 'index'])->name('pledges.index');
             Route::post('/pledges', [PledgeController::class, 'store'])->name('pledges.store');

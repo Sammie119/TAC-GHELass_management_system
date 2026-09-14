@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Exports\FinanceExport;
 use App\Exports\IncomeTemplateExport;
 use App\Http\Controllers\Controller;
+use App\Imports\SundayTithesImport;
 use App\Models\BankAccount;
 use App\Models\BudgetLine;
 use App\Models\Event;
@@ -713,42 +714,134 @@ class FinanceController extends Controller
             'entries.*.category' => 'required|string',
         ]);
 
-        $count = 0;
-        $total = 0;
-        $currency = $request->currency;
-        $rate = $request->exchange_rate;
+        $result = $this->saveTitheEntries(
+            [
+                'event_id' => $request->event_id ?: null,
+                'payment_date' => $request->payment_date,
+                'currency' => $request->currency,
+                'exchange_rate' => $request->exchange_rate,
+                'payment_method' => $request->payment_method,
+                'bank_account_id' => $request->bank_account_id ?: null,
+            ],
+            $request->entries
+        );
 
-        foreach ($request->entries as $entry) {
-            if (empty($entry['amount']) || $entry['amount'] <= 0) {
+        return back()->with('success',
+            "{$result['count']} tithe records saved. Total: GH₵ ".number_format($result['total'], 2)
+        );
+    }
+
+    // ── Sunday tithes Excel template download ─────────────────
+    public function downloadSundayTithesTemplate()
+    {
+        $headers = ['Member ID Card or TACMS Number', 'Category', 'Amount', 'Notes'];
+        $example = [
+            ['CHR-00001', 'tithe', '100.00', ''],
+            ['1234567', 'offering', '50.00', 'Thanksgiving for new job'],
+            ['', 'tithe', '20.00', 'Anonymous / visitor'],
+        ];
+
+        return Excel::download(new IncomeTemplateExport($headers, $example), 'sunday-tithes-template.xlsx');
+    }
+
+    // ── Sunday tithes Excel upload ─────────────────────────────
+    public function uploadSundayTithesExcel(Request $request)
+    {
+        $request->validate([
+            'excel_file' => 'required|file|mimes:xlsx,xls,csv',
+            'event_id' => 'nullable|exists:events,id',
+            'payment_date' => 'required|date',
+            'payment_method' => 'required|string',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'currency' => 'required|string',
+            'exchange_rate' => 'required|numeric|min:0.0001',
+        ]);
+
+        $import = new SundayTithesImport();
+        Excel::import($import, $request->file('excel_file'));
+
+        if (empty($import->entries)) {
+            return back()
+                ->with('error', 'No valid rows found in the uploaded file. Check that it matches the template columns (Member ID Card or TACMS Number, Category, Amount, Notes).')
+                ->with('import_errors', $import->errors);
+        }
+
+        $result = $this->saveTitheEntries(
+            [
+                'event_id' => $request->event_id ?: null,
+                'payment_date' => $request->payment_date,
+                'currency' => $request->currency,
+                'exchange_rate' => $request->exchange_rate,
+                'payment_method' => $request->payment_method,
+                'bank_account_id' => $request->bank_account_id ?: null,
+            ],
+            $import->entries
+        );
+
+        $message = "{$result['count']} tithe records imported from Excel. Total: GH₵ ".number_format($result['total'], 2);
+        if ($import->skipped > 0) {
+            $message .= " {$import->skipped} row(s) skipped.";
+        }
+
+        return back()->with('success', $message)->with('import_errors', $import->errors);
+    }
+
+    // ── Shared save logic for manual & Excel-imported tithe entries ──
+    private function saveTitheEntries(array $global, iterable $entries): array
+    {
+        $count = 0;
+        $total = 0.0;
+        $currency = $global['currency'];
+        $rate = (float) $global['exchange_rate'];
+
+        foreach ($entries as $entry) {
+            $amount = (float) ($entry['amount'] ?? 0);
+            if ($amount <= 0) {
                 continue;
             }
 
-            IncomeRecord::updateOrCreate(
-                [
-                    'member_id' => $entry['member_id'] ?? null,
-                    'category' => $entry['category'],
-                    'payment_date' => $request->payment_date,
+            $category = $entry['category'] ?? 'tithe';
+            $attributes = [
+                'amount' => $amount,
+                'exchange_rate' => $rate,
+                'amount_ghs' => $amount * $rate,
+                'payment_method' => $global['payment_method'],
+                'bank_account_id' => $global['bank_account_id'] ?? null,
+                'notes' => $entry['notes'] ?? null,
+                'status' => 'confirmed',
+                'recorded_by' => auth()->id(),
+            ];
+
+            if (!empty($entry['member_id'])) {
+                // Named members are idempotent per member+category+date+currency+event,
+                // so re-submitting/re-uploading the same combo updates it in place.
+                IncomeRecord::updateOrCreate(
+                    [
+                        'member_id' => $entry['member_id'],
+                        'category' => $category,
+                        'payment_date' => $global['payment_date'],
+                        'currency' => $currency,
+                        'event_id' => $global['event_id'] ?? null,
+                    ],
+                    $attributes
+                );
+            } else {
+                // Anonymous entries have no stable identity to match on — matching by
+                // category+date+currency+event alone would collapse multiple distinct
+                // anonymous rows in the same batch into one record, silently dropping the rest.
+                IncomeRecord::create($attributes + [
+                    'member_id' => null,
+                    'category' => $category,
+                    'payment_date' => $global['payment_date'],
                     'currency' => $currency,
-                    'event_id' => $request->event_id ?? null,
-                ],
-                [
-                    'amount' => $entry['amount'],
-                    'exchange_rate' => $rate,
-                    'amount_ghs' => $entry['amount'] * $rate,
-                    'payment_method' => $request->payment_method,
-                    'bank_account_id' => $request->bank_account_id,
-                    'notes' => $entry['notes'] ?? null,
-                    'status' => 'confirmed',
-                    'recorded_by' => auth()->id(),
-                ]
-            );
+                    'event_id' => $global['event_id'] ?? null,
+                ]);
+            }
 
             $count++;
-            $total += $entry['amount'] * $rate;
+            $total += $amount * $rate;
         }
 
-        return back()->with('success',
-            "{$count} tithe records saved. Total: GH₵ ".number_format($total, 2)
-        );
+        return ['count' => $count, 'total' => $total];
     }
 }

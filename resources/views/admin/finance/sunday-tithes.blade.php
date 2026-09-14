@@ -13,6 +13,17 @@
         </a>
     </div>
 
+    @if(session('import_errors') && count(session('import_errors')) > 0)
+        <div style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px 16px;border-radius:8px;margin-bottom:1rem;font-size:13px;">
+            <p style="font-weight:600;margin-bottom:6px;">Import warnings:</p>
+            <ul style="list-style:disc;padding-left:20px;">
+                @foreach(session('import_errors') as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     {{-- Service settings --}}
     <div style="background:white;border-radius:14px;border:1px solid #e5e7eb;padding:20px;margin-bottom:1.5rem;">
         <h3 style="font-size:14px;font-weight:600;color:#111827;margin-bottom:16px;">
@@ -116,6 +127,41 @@
         </div>
     </div>
 
+    {{-- Excel upload --}}
+    <div style="background:white;border-radius:14px;border:1px solid #e5e7eb;padding:20px;margin-bottom:1.5rem;">
+        <h3 style="font-size:14px;font-weight:600;color:#111827;margin-bottom:6px;">2. Upload Excel file (optional)</h3>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:14px;">
+            Uses the Service details above for the date, currency, payment method, bank account and event —
+            the file itself only needs Member ID Card or TACMS Number, Category, Amount, Notes.
+            Re-uploading updates matching rows in place rather than duplicating them.
+            <a href="{{ route('admin.finance.sunday-tithes.template') }}" style="color:#2563eb;">Download template</a>
+        </p>
+
+        <form method="POST" action="{{ route('admin.finance.sunday-tithes.upload') }}"
+              enctype="multipart/form-data" onsubmit="return prepareUploadForm();"
+              style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            @csrf
+            <input type="hidden" name="event_id" id="uf-event-id">
+            <input type="hidden" name="payment_date" id="uf-payment-date">
+            <input type="hidden" name="currency" id="uf-currency">
+            <input type="hidden" name="exchange_rate" id="uf-exchange-rate">
+            <input type="hidden" name="payment_method" id="uf-payment-method">
+            <input type="hidden" name="bank_account_id" id="uf-bank-account-id">
+
+            <div style="flex:1;min-width:250px;">
+                <label style="display:block;font-size:12px;font-weight:500;color:#374151;margin-bottom:5px;">
+                    Select Excel file (.xlsx, .xls, .csv)
+                </label>
+                <input type="file" name="excel_file" accept=".xlsx,.xls,.csv" required
+                       style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;box-sizing:border-box;">
+            </div>
+            <button type="submit"
+                    style="background:#16a34a;color:white;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;">
+                Upload &amp; Import
+            </button>
+        </form>
+    </div>
+
     {{-- Totals bar --}}
     <div style="background:linear-gradient(135deg,#16a34a,#22c55e);border-radius:12px;padding:14px 20px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
         <div style="display:flex;gap:24px;flex-wrap:wrap;">
@@ -142,7 +188,7 @@
     {{-- Entry table --}}
     <div style="background:white;border-radius:14px;border:1px solid #e5e7eb;overflow:hidden;">
         <div style="padding:14px 16px;border-bottom:1px solid #f3f4f6;background:#f9fafb;display:flex;justify-content:space-between;align-items:center;">
-            <h3 style="font-size:14px;font-weight:600;color:#111827;">2. Enter tithes & offerings</h3>
+            <h3 style="font-size:14px;font-weight:600;color:#111827;">3. Enter tithes & offerings</h3>
             <span id="row-count-label" style="font-size:12px;color:#9ca3af;">0 rows</span>
         </div>
 
@@ -426,6 +472,22 @@
             });
 
             document.getElementById('master-form').submit();
+        }
+
+        // ── Fill hidden globals before the Excel upload form submits ──
+        function prepareUploadForm() {
+            document.getElementById('uf-event-id').value        = document.getElementById('event-select').value;
+            document.getElementById('uf-payment-date').value    = document.getElementById('global-date').value;
+            document.getElementById('uf-currency').value        = document.getElementById('global-currency').value;
+            document.getElementById('uf-exchange-rate').value   = document.getElementById('global-rate').value;
+            document.getElementById('uf-payment-method').value  = document.getElementById('global-method').value;
+            document.getElementById('uf-bank-account-id').value = document.getElementById('global-bank-account').value;
+
+            if (!document.getElementById('global-date').value) {
+                alert('Please set a payment date in Service details first.');
+                return false;
+            }
+            return true;
         }
 
         // ── Auto-set date when event is selected ────────────────
