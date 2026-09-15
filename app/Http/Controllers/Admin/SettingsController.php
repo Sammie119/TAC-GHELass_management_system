@@ -25,6 +25,8 @@ class SettingsController extends Controller
             'name' => 'required|string|max:150',
             'address' => 'nullable|string|max:1000',
             'logo' => 'nullable|image|max:2048',
+            'pastor_signature' => 'nullable|image|max:2048',
+            'finance_signature' => 'nullable|image|max:2048',
         ]);
 
         $churchSetting = ChurchSetting::current();
@@ -36,7 +38,21 @@ class SettingsController extends Controller
             $validated['logo_path'] = $request->file('logo')->store('church', 'public');
         }
 
-        unset($validated['logo']);
+        if ($request->hasFile('pastor_signature')) {
+            if ($churchSetting->pastor_signature_path && Storage::disk('public')->exists($churchSetting->pastor_signature_path)) {
+                Storage::disk('public')->delete($churchSetting->pastor_signature_path);
+            }
+            $validated['pastor_signature_path'] = $request->file('pastor_signature')->store('church', 'public');
+        }
+
+        if ($request->hasFile('finance_signature')) {
+            if ($churchSetting->finance_signature_path && Storage::disk('public')->exists($churchSetting->finance_signature_path)) {
+                Storage::disk('public')->delete($churchSetting->finance_signature_path);
+            }
+            $validated['finance_signature_path'] = $request->file('finance_signature')->store('church', 'public');
+        }
+
+        unset($validated['logo'], $validated['pastor_signature'], $validated['finance_signature']);
 
         $churchSetting->fill($validated);
         $churchSetting->save();

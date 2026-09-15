@@ -80,6 +80,10 @@ class AppServiceProvider extends ServiceProvider
             'church.address' => $setting->address,
             'church.logo_path' => $setting->logo_path,
             'church.logo_url' => $setting->logo_path ? Storage::disk('public')->url($setting->logo_path) : null,
+            'church.pastor_signature_path' => $setting->pastor_signature_path,
+            'church.pastor_signature_url' => $setting->pastor_signature_path ? Storage::disk('public')->url($setting->pastor_signature_path) : null,
+            'church.finance_signature_path' => $setting->finance_signature_path,
+            'church.finance_signature_url' => $setting->finance_signature_path ? Storage::disk('public')->url($setting->finance_signature_path) : null,
         ]);
     }
 }

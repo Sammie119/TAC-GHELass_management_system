@@ -65,6 +65,55 @@
                 </div>
             </div>
 
+            {{-- Signatures --}}
+            <div style="margin-top:20px;padding-top:20px;border-top:1px solid #f3f4f6;">
+                <p style="font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">Signatures</p>
+                <p style="font-size:12px;color:#9ca3af;margin-bottom:14px;">Used on the Form A PDF once a period is fully approved</p>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                    <style>@media(max-width:640px){.signature-grid{grid-template-columns:1fr !important;}}</style>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" class="signature-grid">
+
+                        {{-- Pastor signature --}}
+                        <div style="display:flex;align-items:center;gap:14px;">
+                            <div style="width:120px;height:60px;border-radius:8px;background:#f9fafb;border:1px solid #e5e7eb;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+                                @if($churchSetting->pastor_signature_path)
+                                    <img src="{{ Storage::url($churchSetting->pastor_signature_path) }}" style="max-width:100%;max-height:100%;object-fit:contain;">
+                                @else
+                                    <span style="font-size:11px;color:#d1d5db;">No signature</span>
+                                @endif
+                            </div>
+                            <div>
+                                <p style="font-size:12px;font-weight:500;color:#374151;margin-bottom:4px;">Pastor's Signature</p>
+                                <label style="font-size:12px;color:#2563eb;cursor:pointer;">
+                                    Change signature
+                                    <input type="file" name="pastor_signature" accept="image/*" style="display:none;" onchange="this.form.querySelector('button[type=submit]').focus()">
+                                </label>
+                            </div>
+                        </div>
+
+                        {{-- Finance Chairperson signature --}}
+                        <div style="display:flex;align-items:center;gap:14px;">
+                            <div style="width:120px;height:60px;border-radius:8px;background:#f9fafb;border:1px solid #e5e7eb;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+                                @if($churchSetting->finance_signature_path)
+                                    <img src="{{ Storage::url($churchSetting->finance_signature_path) }}" style="max-width:100%;max-height:100%;object-fit:contain;">
+                                @else
+                                    <span style="font-size:11px;color:#d1d5db;">No signature</span>
+                                @endif
+                            </div>
+                            <div>
+                                <p style="font-size:12px;font-weight:500;color:#374151;margin-bottom:4px;">Finance Chairperson's Signature</p>
+                                <label style="font-size:12px;color:#2563eb;cursor:pointer;">
+                                    Change signature
+                                    <input type="file" name="finance_signature" accept="image/*" style="display:none;" onchange="this.form.querySelector('button[type=submit]').focus()">
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
             <button type="submit"
                     style="margin-top:16px;background:#2563eb;color:white;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;border:none;cursor:pointer;">
                 Save

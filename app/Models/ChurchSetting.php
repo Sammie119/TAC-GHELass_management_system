@@ -10,7 +10,7 @@ class ChurchSetting extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'address', 'logo_path',
+        'name', 'address', 'logo_path', 'pastor_signature_path', 'finance_signature_path',
     ];
 
     public static function current(): self
