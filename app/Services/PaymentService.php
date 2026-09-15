@@ -18,7 +18,12 @@ class PaymentService
             'email' => $email,
             'amount' => $amount,
             'subaccount' => "ACCT_ofarpr9h8tooynl",
+            'reference' => 'ELAss-'.Str::random(24),
             'callback_url' => $callback_url,
+//            'metadata' => [
+//                'tenant_id' => $actor->tenant_id,
+//                'plan_id' => $plan->id,
+//            ],
         ];
 
         $fields_project = [
