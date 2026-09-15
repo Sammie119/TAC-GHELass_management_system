@@ -8,6 +8,7 @@ use App\Exports\MembersExport;
 use App\Exports\VisitorsExport;
 use App\Models\Attendance;
 use App\Models\Event;
+use App\Models\FormAApproval;
 use App\Models\Member;
 use App\Models\Visitor;
 use App\Services\FormAReportService;
@@ -339,8 +340,9 @@ class ReportController extends Controller
         $month = (int) ($request->month ?? $defaultMonth);
 
         $data = $service->build($year, $month);
+        $approval = FormAApproval::firstOrNew(['year' => $year, 'month' => $month]);
 
-        return view('admin.reports.form-a', $data);
+        return view('admin.reports.form-a', $data + ['approval' => $approval]);
     }
 
     // ── Export Form A PDF ──────────────────────────────────────
@@ -350,10 +352,44 @@ class ReportController extends Controller
         $year = (int) ($request->year ?? $defaultYear);
         $month = (int) ($request->month ?? $defaultMonth);
 
+        $approval = FormAApproval::firstOrNew(['year' => $year, 'month' => $month]);
+        if (! $approval->isFullyApproved()) {
+            return back()->with('error', 'Form A for this period must be approved by both the Pastor and Finance Chairman before it can be downloaded.');
+        }
+
         $data = $service->build($year, $month);
 
         $pdf = Pdf::loadView('admin.reports.pdf.form-a', $data)->setPaper('a4', 'portrait');
 
         return $pdf->download("form-a-{$data['month_label']}-{$year}.pdf");
+    }
+
+    // ── Form A approvals ───────────────────────────────────────
+    public function approveFormAPastor(Request $request)
+    {
+        abort_unless(auth()->user()->hasRole('pastor'), 403);
+
+        $request->validate(['year' => 'required|integer', 'month' => 'required|integer|min:1|max:12']);
+
+        FormAApproval::updateOrCreate(
+            ['year' => $request->year, 'month' => $request->month],
+            ['pastor_approved_at' => now(), 'pastor_approved_by' => auth()->id()]
+        );
+
+        return back()->with('success', 'Approved as Pastor.');
+    }
+
+    public function approveFormAFinance(Request $request)
+    {
+        abort_unless(auth()->user()->isFinanceChairman(), 403);
+
+        $request->validate(['year' => 'required|integer', 'month' => 'required|integer|min:1|max:12']);
+
+        FormAApproval::updateOrCreate(
+            ['year' => $request->year, 'month' => $request->month],
+            ['finance_approved_at' => now(), 'finance_approved_by' => auth()->id()]
+        );
+
+        return back()->with('success', 'Approved as Finance Chairman.');
     }
 }

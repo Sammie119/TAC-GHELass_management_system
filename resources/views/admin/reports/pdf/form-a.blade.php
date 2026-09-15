@@ -21,13 +21,14 @@
         table.form-table td.label { text-align: left; }
         .grand-row { font-weight: 700; }
         .retention-row td, .net-row td { border: none; padding: 4px 8px; font-size: 11px; }
-        .net-row { font-weight: 700; font-style: italic; }
-        .retention-row { font-style: italic; }
-        .signatures { margin-top: 50px; }
-        .sig-row { display: flex; justify-content: space-between; margin-bottom: 26px; }
-        .sig-label { font-size: 11px; }
-        .sig-dots { border-bottom: 1px dotted #6b7280; display: inline-block; width: 220px; }
         .footer-note { text-align: center; font-size: 10px; color: #374151; margin-top: 20px; font-style: italic; }
+
+        .signatures { margin-top: 50px; width: 100%; }
+        .sig-table { width: 100%; border-collapse: collapse; margin-bottom: 26px; }
+        .sig-table td { font-size: 11px; padding: 0; vertical-align: bottom; }
+        .sig-label-col { width: 55%; }
+        .sig-sign-col { width: 45%; }
+        .sig-dots { border-bottom: 1px dotted #6b7280; display: inline-block; width: 220px; }
     </style>
 </head>
 <body>
@@ -36,14 +37,16 @@
     @if(config('church.logo_path'))
         <img class="letterhead-logo" src="{{ Storage::disk('public')->path(config('church.logo_path')) }}" alt="Logo">
     @endif
-    <h1>{{ config('app.name') }}</h1>
-    @if(config('church.address'))
-        <p class="sub">{{ config('church.address') }}</p>
-    @endif
+    <div class="title">
+        <h1 style="font-size: 25px">THE APOSTOLIC CHURCH-GHANA</h1>
+        <p class="form-tag" style="margin: 0">GENERAL HEADQUARTERS, P.O. BOX GP 633, ACCRA.</p>
+        <p class="form-tag" style="margin: 0">WEBSITE: www.theapostolicchurch.org.gh</p>
+        <p class="form-tag" style="margin: 0">Email: headquarters@tacmail.org, Tel: +233 (0)55 256 9990, +233 (0)54 012 7001</p>
+    </div>
 </div>
 
 <div class="title">
-    <h2>MONTHLY TITHES REMITTANCES STATEMENT</h2>
+    <h3>MONTHLY TITHES REMITTANCES STATEMENT</h3>
     <p class="form-tag">FORM A</p>
 </div>
 
@@ -88,31 +91,47 @@
         <td class="num">{{ number_format($grand_total, 2) }}</td>
         <td></td>
     </tr>
+
+    <tr class="grand-row">
+        <td class="label"><br></td>
+        <td></td>
+        <td class="num"></td>
+        <td class="num"></td>
+        <td class="num"></td>
+        <td></td>
+    </tr>
+    <tr class="grand-row">
+        <td class="label">Less {{ $retention_pct }}% Retention</td>
+        <td></td>
+        <td class="num"></td>
+        <td class="num"></td>
+        <td class="num">{{ number_format($retention_amount, 2) }}</td>
+        <td></td>
+    </tr>
+    <tr class="grand-row">
+        <td class="label">Net Tithes Remitted</td>
+        <td></td>
+        <td class="num"></td>
+        <td class="num"></td>
+        <td class="num">{{ number_format($net_remitted, 2) }}</td>
+        <td></td>
+    </tr>
     </tbody>
 </table>
 
-<table style="width:100%;border-collapse:collapse;">
-    <tr class="retention-row">
-        <td style="width:22%;"></td>
-        <td style="width:52%;">Less {{ $retention_pct }}% Retention</td>
-        <td style="width:26%;text-align:right;">{{ number_format($retention_amount, 2) }}</td>
-    </tr>
-    <tr class="net-row">
-        <td></td>
-        <td>Net Tithes Remitted</td>
-        <td style="text-align:right;">{{ number_format($net_remitted, 2) }}</td>
-    </tr>
-</table>
-
 <div class="signatures">
-    <div class="sig-row">
-        <div class="sig-label">Presiding Elder/Pastor:<span class="sig-dots">&nbsp;</span></div>
-        <div class="sig-label">Signature:<span class="sig-dots" style="width:120px;">&nbsp;</span></div>
-    </div>
-    <div class="sig-row">
-        <div class="sig-label">Finance Chairperson:<span class="sig-dots">&nbsp;</span></div>
-        <div class="sig-label">Signature:<span class="sig-dots" style="width:120px;">&nbsp;</span></div>
-    </div>
+    <table class="sig-table">
+        <tr>
+            <td class="sig-label-col">Presiding Elder/Pastor:<span class="sig-dots">&nbsp;</span></td>
+            <td class="sig-sign-col">Signature:<span class="sig-dots" style="width:120px;">&nbsp;</span></td>
+        </tr>
+    </table>
+    <table class="sig-table">
+        <tr>
+            <td class="sig-label-col">Finance Chairperson:<span class="sig-dots">&nbsp;</span></td>
+            <td class="sig-sign-col">Signature:<span class="sig-dots" style="width:120px;">&nbsp;</span></td>
+        </tr>
+    </table>
 </div>
 
 <p class="footer-note">(A copy of this report shall be filled and kept at the local office)</p>

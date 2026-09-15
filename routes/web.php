@@ -151,6 +151,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         ->group(function () {
             Route::get('/reports/form-a', [ReportController::class, 'formA'])->name('reports.form-a');
             Route::get('/reports/form-a/pdf', [ReportController::class, 'exportFormAPdf'])->name('reports.form-a.pdf');
+            Route::post('/reports/form-a/approve-pastor', [ReportController::class, 'approveFormAPastor'])->name('reports.form-a.approve-pastor');
+            Route::post('/reports/form-a/approve-finance', [ReportController::class, 'approveFormAFinance'])->name('reports.form-a.approve-finance');
         });
 
     // Finance — admin + finance + pastor

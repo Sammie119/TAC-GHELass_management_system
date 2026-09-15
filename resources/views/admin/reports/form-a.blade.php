@@ -2,6 +2,23 @@
 @section('page-title', 'Form A — Monthly Tithes Remittances Statement')
 @section('content')
 
+    @php
+        $canApprovePastor = auth()->user()->hasRole('pastor') && ! $approval->pastor_approved_at;
+        $canApproveFinance = auth()->user()->isFinanceChairman() && ! $approval->finance_approved_at;
+        $isFullyApproved = $approval->isFullyApproved();
+    @endphp
+
+    @if(session('success'))
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;padding:12px 16px;border-radius:8px;margin-bottom:1.5rem;font-size:14px;">
+            {{ session('success') }}
+        </div>
+    @endif
+    @if(session('error'))
+        <div style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px 16px;border-radius:8px;margin-bottom:1.5rem;font-size:14px;">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:12px;">
         <div>
             <h2 style="font-size:18px;font-weight:600;color:#111827;">Form A — Monthly Tithes Remittances Statement</h2>
@@ -9,10 +26,82 @@
                 Period: {{ $period_start->format('d M Y') }} — {{ $period_end->format('d M Y') }}
             </p>
         </div>
-        <a href="{{ route('admin.reports.form-a.pdf', ['year' => $year, 'month' => $month]) }}"
-           style="background:#2563eb;color:white;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
-            Download PDF
-        </a>
+        @if($isFullyApproved)
+            <a href="{{ route('admin.reports.form-a.pdf', ['year' => $year, 'month' => $month]) }}"
+               style="background:#2563eb;color:white;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+                Download PDF
+            </a>
+        @else
+            <div style="text-align:right;">
+                <button type="button" disabled
+                        style="background:#e5e7eb;color:#9ca3af;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:not-allowed;">
+                    Download PDF
+                </button>
+                <p style="font-size:11px;color:#9ca3af;margin-top:4px;max-width:260px;">
+                    Awaiting approval from Pastor and Finance Chairman before this can be downloaded.
+                </p>
+            </div>
+        @endif
+    </div>
+
+    {{-- Approval trail --}}
+    <div style="background:white;border-radius:14px;border:1px solid #e5e7eb;margin-bottom:1.5rem;overflow:hidden;">
+        <div style="padding:14px 20px;border-bottom:1px solid #f3f4f6;background:#f9fafb;">
+            <h3 style="font-size:14px;font-weight:600;color:#111827;">Approval</h3>
+        </div>
+        <div style="padding:16px 20px;display:flex;flex-direction:column;gap:14px;">
+
+            {{-- Pastor --}}
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <p style="font-size:13px;font-weight:500;color:#111827;">Pastor</p>
+                    @if($approval->pastor_approved_at)
+                        <p style="font-size:11px;color:#16a34a;">
+                            Approved by {{ $approval->pastorApprovedBy?->name }} on {{ $approval->pastor_approved_at->format('d M Y, h:i A') }}
+                        </p>
+                    @else
+                        <p style="font-size:11px;color:#9ca3af;">Awaiting approval</p>
+                    @endif
+                </div>
+                @if($canApprovePastor)
+                    <form method="POST" action="{{ route('admin.reports.form-a.approve-pastor') }}">
+                        @csrf
+                        <input type="hidden" name="year" value="{{ $year }}">
+                        <input type="hidden" name="month" value="{{ $month }}">
+                        <button type="submit"
+                                style="background:#16a34a;color:white;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;">
+                            Approve as Pastor
+                        </button>
+                    </form>
+                @endif
+            </div>
+
+            {{-- Finance Chairman --}}
+            <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #f3f4f6;padding-top:14px;">
+                <div>
+                    <p style="font-size:13px;font-weight:500;color:#111827;">Finance Chairman</p>
+                    @if($approval->finance_approved_at)
+                        <p style="font-size:11px;color:#16a34a;">
+                            Approved by {{ $approval->financeApprovedBy?->name }} on {{ $approval->finance_approved_at->format('d M Y, h:i A') }}
+                        </p>
+                    @else
+                        <p style="font-size:11px;color:#9ca3af;">Awaiting approval</p>
+                    @endif
+                </div>
+                @if($canApproveFinance)
+                    <form method="POST" action="{{ route('admin.reports.form-a.approve-finance') }}">
+                        @csrf
+                        <input type="hidden" name="year" value="{{ $year }}">
+                        <input type="hidden" name="month" value="{{ $month }}">
+                        <button type="submit"
+                                style="background:#16a34a;color:white;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;">
+                            Approve as Finance Chairman
+                        </button>
+                    </form>
+                @endif
+            </div>
+
+        </div>
     </div>
 
     {{-- Month/year filter --}}
