@@ -5,18 +5,24 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:12px;">
         <div>
             <h2 style="font-size:18px;font-weight:600;color:#111827;">Cash Book</h2>
-            <p style="font-size:13px;color:#9ca3af;margin-top:2px;">Chronological ledger of receipts and payments, per account</p>
+            <p style="font-size:13px;color:#9ca3af;margin-top:2px;">
+                Chronological ledger of receipts and payments, per account
+                &middot; Period: {{ $periodStart->format('d M Y') }} — {{ $periodEnd->format('d M Y') }}
+            </p>
         </div>
 
         <form method="GET" style="display:flex;gap:8px;align-items:center;">
             <input type="hidden" name="account" value="{{ $account }}">
-            <label style="font-size:13px;color:#374151;">Financial year</label>
-            <select name="year" onchange="this.form.submit()"
+            <select name="month" onchange="this.form.submit()"
                     style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;">
-                @foreach(range(now()->year + 1, now()->year - 3) as $y)
-                    <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
+                @foreach(range(1,12) as $m)
+                    <option value="{{ $m }}" {{ $m === $month ? 'selected' : '' }}>
+                        {{ \Carbon\Carbon::create(2000, $m, 1)->format('F') }}
+                    </option>
                 @endforeach
             </select>
+            <input type="number" name="year" value="{{ $year }}" onchange="this.form.submit()"
+                   style="width:90px;border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;box-sizing:border-box;">
         </form>
     </div>
 
@@ -29,7 +35,7 @@
     {{-- Account tabs --}}
     <div style="display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;">
         @foreach($tabs as $key => $label)
-            <a href="{{ route('admin.cash-book.index', ['year' => $year, 'account' => $key]) }}"
+            <a href="{{ route('admin.cash-book.index', ['year' => $year, 'month' => $month, 'account' => $key]) }}"
                style="padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;
                   {{ $account === $key
                      ? 'background:#2563eb;color:white;'
@@ -46,7 +52,12 @@
 
             <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px;text-align:center;">
                 <p style="font-size:20px;font-weight:800;color:#2563eb;">GH₵ {{ number_format($openingBalance, 2) }}</p>
-                <p style="font-size:12px;color:#9ca3af;margin-top:4px;">Opening balance</p>
+                <p style="font-size:12px;color:#9ca3af;margin-top:4px;">
+                    Opening balance
+                    @if(! $openingBalanceIsManual)
+                        <br><span style="font-style:italic;">(carried forward)</span>
+                    @endif
+                </p>
             </div>
             <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px;text-align:center;">
                 <p style="font-size:20px;font-weight:800;color:#16a34a;">GH₵ {{ number_format($totalReceipts, 2) }}</p>
@@ -68,12 +79,13 @@
     <div style="background:white;border-radius:14px;border:1px solid #e5e7eb;padding:20px;margin-bottom:1.5rem;">
         <button type="button" onclick="document.getElementById('opening-balance-form').style.display='flex'; this.style.display='none';"
                 style="background:#f3f4f6;border:1px solid #d1d5db;color:#374151;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">
-            Set opening balance for {{ $tabs[$account] }} ({{ $year }})
+            Set opening balance for {{ $tabs[$account] }} ({{ $monthLabel }} {{ $year }})
         </button>
         <form id="opening-balance-form" method="POST" action="{{ route('admin.cash-book.opening-balance') }}"
               style="display:none;gap:10px;align-items:flex-end;margin-top:4px;">
             @csrf
             <input type="hidden" name="financial_year" value="{{ $year }}">
+            <input type="hidden" name="month" value="{{ $month }}">
             <input type="hidden" name="account" value="{{ $account }}">
             <div>
                 <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:5px;">Opening balance (GHS)</label>
@@ -125,7 +137,7 @@
             @empty
                 <tr>
                     <td colspan="6" style="padding:48px;text-align:center;color:#9ca3af;font-size:14px;">
-                        No {{ strtolower($tabs[$account]) }} transactions recorded for {{ $year }}.
+                        No {{ strtolower($tabs[$account]) }} transactions recorded for {{ $monthLabel }} {{ $year }}.
                     </td>
                 </tr>
             @endforelse

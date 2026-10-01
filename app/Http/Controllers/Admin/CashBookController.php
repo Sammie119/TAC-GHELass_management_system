@@ -7,13 +7,21 @@ use App\Models\BankAccount;
 use App\Models\CashBookOpeningBalance;
 use App\Models\ExpenseRecord;
 use App\Models\IncomeRecord;
+use App\Services\FormAReportService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class CashBookController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, FormAReportService $service)
     {
-        $year = (int) ($request->year ?? now()->year);
+        [$defaultYear, $defaultMonth] = $service->defaultYearMonth();
+        $year = (int) ($request->year ?? $defaultYear);
+        $month = (int) ($request->month ?? $defaultMonth);
+
+        [$periodStart, $periodEnd] = $service->cashBookPeriodBounds($year, $month);
+        $monthLabel = Carbon::create($year, $month, 1)->format('F');
+
         $bankAccounts = BankAccount::where('is_active', true)->orderBy('name')->get();
 
         $account = $this->resolveAccount($request->account, $bankAccounts);
@@ -24,7 +32,7 @@ class CashBookController extends Controller
 
         $income = IncomeRecord::with('member')
             ->where('status', 'confirmed')
-            ->whereYear('payment_date', $year)
+            ->whereBetween('payment_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
             ->tap(fn ($q) => $this->applyAccountFilter($q, $account))
             ->get()
             ->groupBy(fn ($r) => $r->payment_date->format('Y-m-d').'|'.$r->category)
@@ -41,7 +49,7 @@ class CashBookController extends Controller
             })->values();
 
         $expenses = ExpenseRecord::where('status', 'approved')
-            ->whereYear('expense_date', $year)
+            ->whereBetween('expense_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
             ->tap(fn ($q) => $this->applyAccountFilter($q, $account))
             ->get()
             ->groupBy(fn ($r) => $r->expense_date->format('Y-m-d').'|'.$r->category)
@@ -60,9 +68,15 @@ class CashBookController extends Controller
         $transactions = $income->concat($expenses)->sortBy('date')->values();
 
         $openingBalanceKey = $this->openingBalanceKey($account);
-        $openingBalance = (float) (CashBookOpeningBalance::where('financial_year', $year)
+        $manualOpeningBalance = CashBookOpeningBalance::where('financial_year', $year)
+            ->where('month', $month)
             ->where($openingBalanceKey)
-            ->value('amount') ?? 0);
+            ->value('amount');
+
+        $openingBalanceIsManual = $manualOpeningBalance !== null;
+        $openingBalance = $manualOpeningBalance !== null
+            ? (float) $manualOpeningBalance
+            : $this->carriedForwardBalance($year, $month, $account);
 
         $runningBalance = $openingBalance;
         $totalReceipts = 0;
@@ -84,8 +98,8 @@ class CashBookController extends Controller
         $closingBalance = $runningBalance;
 
         return view('admin.finance.cash-book', compact(
-            'year', 'account', 'tabs', 'ledger',
-            'openingBalance', 'totalReceipts', 'totalPayments', 'closingBalance'
+            'year', 'month', 'monthLabel', 'periodStart', 'periodEnd', 'account', 'tabs', 'ledger',
+            'openingBalance', 'openingBalanceIsManual', 'totalReceipts', 'totalPayments', 'closingBalance'
         ));
     }
 
@@ -95,6 +109,7 @@ class CashBookController extends Controller
 
         $validated = $request->validate([
             'financial_year' => 'required|integer|min:2000|max:2100',
+            'month' => 'required|integer|min:1|max:12',
             'account' => 'required|string',
             'amount' => 'required|numeric|min:0',
         ]);
@@ -103,7 +118,7 @@ class CashBookController extends Controller
         $key = $this->openingBalanceKey($account);
 
         CashBookOpeningBalance::updateOrCreate(
-            array_merge(['financial_year' => $validated['financial_year']], $key),
+            array_merge(['financial_year' => $validated['financial_year'], 'month' => $validated['month']], $key),
             [
                 'amount' => $validated['amount'],
                 'created_by' => auth()->id(),
@@ -111,6 +126,45 @@ class CashBookController extends Controller
         );
 
         return back()->with('success', 'Opening balance updated.');
+    }
+
+    /**
+     * Walk backward one period at a time until a manual opening balance is
+     * found (or transactions run out), summing each period's net receipts
+     * minus payments along the way. Capped at 240 periods (20 years) as a
+     * safety guard against runaway recursion on bad data.
+     */
+    private function carriedForwardBalance(int $year, int $month, string $account, int $depth = 0): float
+    {
+        if ($depth >= 240) {
+            return 0.0;
+        }
+
+        [$prevYear, $prevMonth] = $month === 1 ? [$year - 1, 12] : [$year, $month - 1];
+        $key = $this->openingBalanceKey($account);
+
+        $manual = CashBookOpeningBalance::where('financial_year', $prevYear)
+            ->where('month', $prevMonth)
+            ->where($key)
+            ->value('amount');
+
+        $opening = $manual !== null
+            ? (float) $manual
+            : $this->carriedForwardBalance($prevYear, $prevMonth, $account, $depth + 1);
+
+        [$prevPeriodStart, $prevPeriodEnd] = app(FormAReportService::class)->cashBookPeriodBounds($prevYear, $prevMonth);
+
+        $netReceipts = IncomeRecord::where('status', 'confirmed')
+            ->whereBetween('payment_date', [$prevPeriodStart->toDateString(), $prevPeriodEnd->toDateString()])
+            ->tap(fn ($q) => $this->applyAccountFilter($q, $account))
+            ->sum('amount_ghs');
+
+        $netPayments = ExpenseRecord::where('status', 'approved')
+            ->whereBetween('expense_date', [$prevPeriodStart->toDateString(), $prevPeriodEnd->toDateString()])
+            ->tap(fn ($q) => $this->applyAccountFilter($q, $account))
+            ->sum('amount_ghs');
+
+        return $opening + (float) $netReceipts - (float) $netPayments;
     }
 
     /**

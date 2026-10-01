@@ -94,6 +94,32 @@ class FormAReportService
     }
 
     /**
+     * The Form A period's start (second Sunday of $month) and end (first
+     * Sunday of the following month), for callers that need the raw date
+     * range rather than every Sunday within it.
+     */
+    public function periodBounds(int $year, int $month): array
+    {
+        $sundays = $this->periodSundays($year, $month);
+
+        return [$sundays->first(), $sundays->last()];
+    }
+
+    /**
+     * Like periodBounds(), but with the gap between consecutive Form A
+     * periods closed: starts the Monday of the week containing the second
+     * Sunday (6 days earlier) instead of the second Sunday itself, so one
+     * month's period ends exactly where the next one begins. Form A itself
+     * deliberately leaves that gap week uncounted; a Cash Book cannot.
+     */
+    public function cashBookPeriodBounds(int $year, int $month): array
+    {
+        [$secondSunday, $firstSundayNextMonth] = $this->periodBounds($year, $month);
+
+        return [$secondSunday->copy()->subDays(6), $firstSundayNextMonth];
+    }
+
+    /**
      * Second Sunday of $month through the first Sunday of the following
      * month, inclusive — always 4 or 5 Sundays.
      */
