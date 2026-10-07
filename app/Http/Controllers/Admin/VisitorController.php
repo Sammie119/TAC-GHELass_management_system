@@ -27,6 +27,10 @@ class VisitorController extends Controller
             $query->where('event_id', $request->event_id);
         }
 
+        if (in_array($request->status, ['visit', 'stay'], true)) {
+            $query->where('status', $request->status);
+        }
+
         if ($request->filled('from')) {
             $query->whereDate('visited_at', '>=', $request->from);
         }
