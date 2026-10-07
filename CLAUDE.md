@@ -46,7 +46,14 @@ There are four distinct front-ends sharing one Laravel app:
 | `/give` | None (public) | Guest online giving (Paystack) |
 
 ### Roles (Spatie Permission)
-Five roles: `admin`, `usher`, `membership`, `finance`, `member`. Routes inside `/admin` are guarded with `RoleMiddleware::using('admin|finance')` etc. The `member` role is used in the portal, not the admin panel.
+Seven roles (seeded by `RoleSeeder`): `admin`, `usher`, `membership`, `finance`, `member`, `pastor`, `finance_chairman`. Routes inside `/admin` are guarded with `RoleMiddleware::using('admin|finance')` etc. The `member` role is used in the portal, not the admin panel.
+
+`pastor` and `finance_chairman` are approver roles with broad read access to membership, attendance and finance routes:
+- **Financial requests** — two-stage approval: `approvePastor` (requires `pastor`), then `approveSuperAdmin` (requires finance chairman). Either can `reject`.
+- **Form A report** — the PDF download needs both `approveFormAPastor` and `approveFormAFinance` (see `FormAApproval`, `FormAReportService`).
+- **Dashboard** — `DashboardController` shows role-specific views for pastor / finance chairman.
+
+Check the finance chairman with `User::isFinanceChairman()`, not `hasRole('finance_chairman')` — it also returns true for user ID 1 (the super admin).
 
 ### Key Models & Relationships
 - **Member** — core entity; auto-generates `member_id_card` (`EL-00001`) and `qr_code` UUID on creation; soft-deletes.
