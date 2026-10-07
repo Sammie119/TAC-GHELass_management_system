@@ -115,7 +115,17 @@
 
             <div style="background:white;border-radius:12px;border:1px solid #e5e7eb;padding:18px;">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
-                    <p style="font-size:13px;color:#6b7280;">Visitors this month</p>
+                    <div>
+                        <p style="font-size:13px;color:#6b7280;">Visitors this month</p>
+                        <form method="GET" style="margin-top:4px;">
+                            <select name="visitor_status" onchange="this.form.submit()" aria-label="Visitor status"
+                                    style="border:1px solid #e5e7eb;border-radius:6px;padding:2px 6px;font-size:12px;color:#374151;outline:none;background:white;">
+                                <option value="">All statuses</option>
+                                <option value="visit" {{ $visitorStatus === 'visit' ? 'selected' : '' }}>Visit</option>
+                                <option value="stay" {{ $visitorStatus === 'stay' ? 'selected' : '' }}>Stay</option>
+                            </select>
+                        </form>
+                    </div>
                     <div style="width:34px;height:34px;background:#fef3c7;border-radius:8px;display:flex;align-items:center;justify-content:center;">
                         <svg style="width:16px;height:16px;color:#d97706;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -164,7 +174,7 @@
             </span>
                 <span style="display:flex;align-items:center;gap:5px;">
                 <span style="width:12px;height:3px;background:#d97706;border-radius:2px;display:inline-block;"></span>
-                Visitors
+                Visitors{{ $visitorStatus ? ' ('.ucfirst($visitorStatus).')' : '' }}
             </span>
             </div>
         </div>
@@ -406,7 +416,7 @@
                         fill: true,
                     },
                     {
-                        label: 'Visitors',
+                        label: @json($visitorStatus ? 'Visitors ('.ucfirst($visitorStatus).')' : 'Visitors'),
                         data: visData,
                         borderColor: '#d97706',
                         backgroundColor: 'rgba(217,119,6,0.06)',

@@ -9,11 +9,18 @@ use App\Models\Event;
 use App\Models\FinancialRequest;
 use App\Models\Member;
 use App\Models\Visitor;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        // ── Visitor status filter (visit / stay) for visitor stats ──
+        $visitorStatus = in_array($request->visitor_status, ['visit', 'stay'], true)
+            ? $request->visitor_status
+            : null;
+        $visitors = fn () => Visitor::when($visitorStatus, fn ($q) => $q->where('status', $visitorStatus));
+
         // ── Pending financial request approvals for this user ──
         $pendingApprovals = collect();
         $isPastor = auth()->user()->hasRole('pastor');
@@ -48,8 +55,8 @@ class DashboardController extends Controller
             ])->count(),
             'checkins_this_month' => Attendance::whereMonth('checked_in_at', now()->month)
                 ->whereYear('checked_in_at', now()->year)->count(),
-            'total_visitors' => Visitor::count(),
-            'visitors_this_month' => Visitor::whereMonth('visited_at', now()->month)
+            'total_visitors' => $visitors()->count(),
+            'visitors_this_month' => $visitors()->whereMonth('visited_at', now()->month)
                 ->whereYear('visited_at', now()->year)->count(),
             'flagged_absentees' => AbsenteeFlag::where('status', 'flagged')->count(),
             'active_event' => Event::where('status', 'active')->latest()->first(),
@@ -78,12 +85,12 @@ class DashboardController extends Controller
         });
 
         // ── Monthly visitors (last 12 months) ──────────────
-        $monthlyVisitors = collect(range(11, 0))->map(function ($i) {
+        $monthlyVisitors = collect(range(11, 0))->map(function ($i) use ($visitors) {
             $date = now()->subMonths($i);
 
             return [
                 'month' => $date->format('M Y'),
-                'count' => Visitor::whereMonth('visited_at', $date->month)
+                'count' => $visitors()->whereMonth('visited_at', $date->month)
                     ->whereYear('visited_at', $date->year)->count(),
             ];
         });
@@ -169,7 +176,8 @@ class DashboardController extends Controller
             'recentCheckins',
             'nextEvents',
             'pendingApprovals',
-            'pendingApprovalsCount'
+            'pendingApprovalsCount',
+            'visitorStatus'
         ));
     }
 }
