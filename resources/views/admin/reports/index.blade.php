@@ -132,7 +132,7 @@
                     </div>
                     <div>
                         <p style="font-size:14px;font-weight:600;color:#111827;">Visitors Report</p>
-                        <p style="font-size:12px;color:#9ca3af;">Filter by event or date range</p>
+                        <p style="font-size:12px;color:#9ca3af;">Filter by event, status or date range</p>
                     </div>
                 </div>
 
@@ -144,6 +144,16 @@
                         @foreach($events as $event)
                             <option value="{{ $event->id }}">{{ $event->title }} — {{ $event->event_date->format('d M Y') }}</option>
                         @endforeach
+                    </select>
+                </div>
+
+                <div style="margin-bottom:12px;">
+                    <label style="display:block;font-size:12px;font-weight:500;color:#374151;margin-bottom:4px;">Status (optional)</label>
+                    <select id="vis-status"
+                            style="width:100%;border:1px solid #d1d5db;border-radius:6px;padding:7px 10px;font-size:13px;outline:none;">
+                        <option value="">All statuses</option>
+                        <option value="visit">Visit</option>
+                        <option value="stay">Stay</option>
                     </select>
                 </div>
 
@@ -333,9 +343,11 @@
 
             if (type === 'visitors') {
                 const eventId = document.getElementById('vis-event').value;
+                const status  = document.getElementById('vis-status').value;
                 const from    = document.getElementById('vis-from').value;
                 const to      = document.getElementById('vis-to').value;
                 if (eventId) params.append('event_id', eventId);
+                if (status)  params.append('status', status);
                 if (from)    params.append('from', from);
                 if (to)      params.append('to', to);
             }

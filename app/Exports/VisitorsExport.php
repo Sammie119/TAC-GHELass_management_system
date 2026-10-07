@@ -19,6 +19,7 @@ class VisitorsExport implements
         protected ?int $eventId = null,
         protected ?string $from = null,
         protected ?string $to = null,
+        protected ?string $status = null,
     ) {}
 
     public function query()
@@ -27,6 +28,10 @@ class VisitorsExport implements
 
         if ($this->eventId) {
             $query->where('event_id', $this->eventId);
+        }
+
+        if (in_array($this->status, ['visit', 'stay'], true)) {
+            $query->where('status', $this->status);
         }
 
         if ($this->from) {

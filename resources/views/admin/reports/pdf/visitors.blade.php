@@ -22,6 +22,9 @@
     @else
         All events
     @endif
+    @if($status)
+        · Status: {{ ucfirst($status) }}
+    @endif
     · Generated: {{ now()->format('d M Y, h:i A') }}
 </p>
 

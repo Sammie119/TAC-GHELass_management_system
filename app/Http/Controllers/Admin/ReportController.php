@@ -97,7 +97,8 @@ class ReportController extends Controller
             new VisitorsExport(
                 $request->event_id,
                 $request->from,
-                $request->to
+                $request->to,
+                $request->status
             ),
             'visitors-' . now()->format('Y-m-d') . '.xlsx'
         );
@@ -162,6 +163,12 @@ class ReportController extends Controller
             $query->where('event_id', $request->event_id);
         }
 
+        $status = in_array($request->status, ['visit', 'stay'], true) ? $request->status : null;
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
         if ($request->from) {
             $query->whereDate('visited_at', '>=', $request->from);
         }
@@ -173,7 +180,7 @@ class ReportController extends Controller
         $visitors = $query->latest('visited_at')->get();
         $event    = $request->event_id ? Event::find($request->event_id) : null;
 
-        $pdf = Pdf::loadView('admin.reports.pdf.visitors', compact('visitors', 'event'))
+        $pdf = Pdf::loadView('admin.reports.pdf.visitors', compact('visitors', 'event', 'status'))
             ->setPaper('a4', 'landscape');
 
         return $pdf->download('visitors-' . now()->format('Y-m-d') . '.pdf');
