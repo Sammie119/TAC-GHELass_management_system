@@ -28,11 +28,15 @@
                 </option>
             @endforeach
         </select>
+        <input type="date" name="from" value="{{ request('from') }}" title="From date"
+               style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:14px;outline:none;">
+        <input type="date" name="to" value="{{ request('to') }}" title="To date"
+               style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:14px;outline:none;">
         <button type="submit"
                 style="background:#f3f4f6;border:1px solid #d1d5db;padding:8px 16px;border-radius:8px;font-size:14px;cursor:pointer;">
             Filter
         </button>
-        @if(request('search') || request('event_id'))
+        @if(request('search') || request('event_id') || request('from') || request('to'))
             <a href="{{ route('admin.visitors.index') }}"
                style="border:1px solid #d1d5db;color:#6b7280;padding:8px 16px;border-radius:8px;font-size:14px;text-decoration:none;">
                 Clear

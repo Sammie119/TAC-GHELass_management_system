@@ -27,6 +27,14 @@ class VisitorController extends Controller
             $query->where('event_id', $request->event_id);
         }
 
+        if ($request->filled('from')) {
+            $query->whereDate('visited_at', '>=', $request->from);
+        }
+
+        if ($request->filled('to')) {
+            $query->whereDate('visited_at', '<=', $request->to);
+        }
+
         $visitors = $query->latest('visited_at')->paginate(20)->withQueryString();
         $events   = Event::orderBy('event_date', 'desc')->take(30)->get();
 
