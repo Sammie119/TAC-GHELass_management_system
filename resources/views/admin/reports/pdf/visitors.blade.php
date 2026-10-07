@@ -32,9 +32,10 @@
         <th>Full Name</th>
         <th>Phone</th>
         <th>Email</th>
+        <th>Status</th>
         <th>Event</th>
         <th>Event Date</th>
-        <th>Visited At</th>
+        <th>Visit Date</th>
         <th>Recorded By</th>
         <th>Notes</th>
     </tr>
@@ -46,9 +47,10 @@
             <td>{{ $visitor->full_name }}</td>
             <td>{{ $visitor->phone ?? '—' }}</td>
             <td>{{ $visitor->email ?? '—' }}</td>
-            <td>{{ $visitor->event->title ?? '—' }}</td>
-            <td>{{ $visitor->event->event_date->format('d M Y') ?? '—' }}</td>
-            <td>{{ $visitor->visited_at->format('d M Y h:i A') }}</td>
+            <td>{{ ucfirst($visitor->status) }}</td>
+            <td>{{ $visitor->event?->title ?? '—' }}</td>
+            <td>{{ $visitor->event?->event_date?->format('d M Y') ?? '—' }}</td>
+            <td>{{ $visitor->visited_at->format('d M Y') }}</td>
             <td>{{ $visitor->recordedBy->name ?? 'System' }}</td>
             <td>{{ $visitor->notes ?? '—' }}</td>
         </tr>

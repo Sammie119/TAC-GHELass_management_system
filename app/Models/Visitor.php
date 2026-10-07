@@ -11,7 +11,7 @@ class Visitor extends Model
 
     protected $fillable = [
         'first_name', 'last_name', 'phone',
-        'email', 'event_id', 'recorded_by', 'notes', 'visited_at',
+        'email', 'status', 'event_id', 'recorded_by', 'notes', 'visited_at',
     ];
 
     protected $casts = [

@@ -64,7 +64,13 @@
                                 {{ strtoupper(substr($visitor->first_name,0,1).substr($visitor->last_name,0,1)) }}
                             </div>
                             <div>
-                                <p style="font-weight:500;color:#111827;">{{ $visitor->full_name }}</p>
+                                <p style="font-weight:500;color:#111827;">
+                                    {{ $visitor->full_name }}
+                                    <span style="font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;margin-left:4px;
+                                        {{ $visitor->status === 'stay' ? 'background:#dcfce7;color:#15803d;' : 'background:#f3f4f6;color:#4b5563;' }}">
+                                        {{ $visitor->status === 'stay' ? 'Stay' : 'Visit' }}
+                                    </span>
+                                </p>
                                 @if($visitor->notes)
                                     <p style="font-size:12px;color:#9ca3af;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                                         {{ $visitor->notes }}
@@ -78,12 +84,15 @@
                         <p style="font-size:12px;color:#9ca3af;">{{ $visitor->email ?? '' }}</p>
                     </td>
                     <td style="padding:14px 20px;">
-                        <p style="color:#111827;font-weight:500;">{{ $visitor->event->title }}</p>
-                        <p style="font-size:12px;color:#9ca3af;">{{ $visitor->event->event_date->format('d M Y') }}</p>
+                        @if($visitor->event)
+                            <p style="color:#111827;font-weight:500;">{{ $visitor->event->title }}</p>
+                            <p style="font-size:12px;color:#9ca3af;">{{ $visitor->event->event_date->format('d M Y') }}</p>
+                        @else
+                            <p style="color:#9ca3af;">—</p>
+                        @endif
                     </td>
                     <td style="padding:14px 20px;color:#6b7280;font-size:13px;">
-                        {{ $visitor->visited_at->format('d M Y') }}<br>
-                        <span style="color:#9ca3af;">{{ $visitor->visited_at->format('h:i A') }}</span>
+                        {{ $visitor->visited_at->format('d M Y') }}
                     </td>
                     <td style="padding:14px 20px;color:#6b7280;font-size:13px;">
                         {{ $visitor->recordedBy->name ?? 'System' }}

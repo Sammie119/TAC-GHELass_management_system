@@ -35,8 +35,8 @@ class VisitorController extends Controller
 
     public function create(Request $request)
     {
-        $events      = Event::whereIn('status', ['active', 'upcoming'])
-            ->orderBy('event_date')->get();
+        $events      = Event::whereIn('status', ['active', 'closed'])
+            ->orderByDesc('event_date')->get();
         $selectedEvent = $request->filled('event_id')
             ? Event::find($request->event_id)
             : Event::where('status', 'active')->latest()->first();
@@ -51,12 +51,13 @@ class VisitorController extends Controller
             'last_name'  => 'required|string|max:100',
             'phone'      => 'nullable|string|max:20',
             'email'      => 'nullable|email|max:150',
-            'event_id'   => 'required|exists:events,id',
+            'event_id'   => 'nullable|exists:events,id',
+            'visited_at' => 'required|date|before_or_equal:today',
+            'status'     => 'required|in:visit,stay',
             'notes'      => 'nullable|string|max:500',
         ]);
 
         $validated['recorded_by'] = auth()->id();
-        $validated['visited_at']  = now();
 
         Visitor::create($validated);
 
@@ -90,7 +91,10 @@ class VisitorController extends Controller
 
     public function edit(Visitor $visitor)
     {
-        $events = Event::orderBy('event_date', 'desc')->take(30)->get();
+        // Include the visitor's current event even if it's upcoming, so saving doesn't unlink it
+        $events = Event::whereIn('status', ['active', 'closed'])
+            ->orWhere('id', $visitor->event_id)
+            ->orderByDesc('event_date')->get();
         return view('admin.visitors.edit', compact('visitor', 'events'));
     }
 
@@ -101,7 +105,9 @@ class VisitorController extends Controller
             'last_name'  => 'required|string|max:100',
             'phone'      => 'nullable|string|max:20',
             'email'      => 'nullable|email|max:150',
-            'event_id'   => 'required|exists:events,id',
+            'event_id'   => 'nullable|exists:events,id',
+            'visited_at' => 'required|date|before_or_equal:today',
+            'status'     => 'required|in:visit,stay',
             'notes'      => 'nullable|string|max:500',
         ]);
 

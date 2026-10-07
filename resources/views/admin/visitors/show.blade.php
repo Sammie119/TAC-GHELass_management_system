@@ -4,7 +4,13 @@
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
         <div>
-            <h2 style="font-size:18px;font-weight:600;color:#111827;">{{ $visitor->full_name }}</h2>
+            <h2 style="font-size:18px;font-weight:600;color:#111827;">
+                {{ $visitor->full_name }}
+                <span style="font-size:12px;font-weight:500;padding:2px 10px;border-radius:999px;margin-left:6px;vertical-align:middle;
+                    {{ $visitor->status === 'stay' ? 'background:#dcfce7;color:#15803d;' : 'background:#f3f4f6;color:#4b5563;' }}">
+                    {{ $visitor->status === 'stay' ? 'Stay' : 'Visit' }}
+                </span>
+            </h2>
             <p style="font-size:13px;color:#9ca3af;margin-top:2px;">
                 First visited {{ $visitor->visited_at->format('D, d M Y') }}
             </p>
@@ -73,6 +79,7 @@
                         <h3 style="font-size:14px;font-weight:600;color:#111827;">This visit</h3>
                     </div>
                     <div style="padding:20px;">
+                        @if($visitor->event)
                         <div style="display:flex;align-items:center;gap:14px;padding:14px;background:#f9fafb;border-radius:10px;">
                             <div style="width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;
                         {{ $visitor->event->type === 'sunday'  ? 'background:#dbeafe;color:#2563eb;' : '' }}
@@ -83,11 +90,16 @@
                             <div>
                                 <p style="font-size:14px;font-weight:500;color:#111827;">{{ $visitor->event->title }}</p>
                                 <p style="font-size:12px;color:#9ca3af;">
-                                    {{ $visitor->event->event_date->format('D, d M Y') }} ·
-                                    {{ $visitor->visited_at->format('h:i A') }}
+                                    {{ $visitor->event->event_date->format('D, d M Y') }}
                                 </p>
                             </div>
                         </div>
+                        @else
+                        <div style="padding:14px;background:#f9fafb;border-radius:10px;">
+                            <p style="font-size:14px;font-weight:500;color:#111827;">Visited {{ $visitor->visited_at->format('D, d M Y') }}</p>
+                            <p style="font-size:12px;color:#9ca3af;">No event linked</p>
+                        </div>
+                        @endif
                     </div>
                 </div>
 
@@ -106,8 +118,8 @@
                                      onmouseenter="this.style.background='#f9fafb'"
                                      onmouseleave="this.style.background=''">
                                     <div>
-                                        <p style="font-size:14px;font-weight:500;color:#111827;">{{ $prev->event->title }}</p>
-                                        <p style="font-size:12px;color:#9ca3af;">{{ $prev->event->event_date->format('D, d M Y') }}</p>
+                                        <p style="font-size:14px;font-weight:500;color:#111827;">{{ $prev->event?->title ?? 'Visit' }}</p>
+                                        <p style="font-size:12px;color:#9ca3af;">{{ ($prev->event?->event_date ?? $prev->visited_at)->format('D, d M Y') }}</p>
                                     </div>
                                     <a href="{{ route('admin.visitors.show', $prev) }}"
                                        style="font-size:12px;color:#2563eb;text-decoration:none;">View →</a>

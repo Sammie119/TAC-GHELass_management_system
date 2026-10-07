@@ -91,17 +91,39 @@
                 <div style="display:flex;flex-direction:column;gap:16px;">
 
                     <div style="background:white;border-radius:12px;border:1px solid #e5e7eb;padding:24px;">
-                        <h3 style="font-size:14px;font-weight:600;color:#374151;margin-bottom:16px;">Event</h3>
+                        <h3 style="font-size:14px;font-weight:600;color:#374151;margin-bottom:16px;">Visit</h3>
 
                         <div style="margin-bottom:16px;">
                             <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px;">
-                                Event <span style="color:#ef4444;">*</span>
+                                Date of visit <span style="color:#ef4444;">*</span>
                             </label>
-                            <select name="event_id"
+                            <input type="date" name="visited_at" id="visited_at"
+                                   value="{{ old('visited_at', today()->format('Y-m-d')) }}"
+                                   max="{{ today()->format('Y-m-d') }}"
+                                   style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:10px 14px;font-size:14px;outline:none;box-sizing:border-box;"
+                                   required>
+                        </div>
+
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px;">
+                                Status <span style="color:#ef4444;">*</span>
+                            </label>
+                            <select name="status" required
                                     style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:10px 14px;font-size:14px;outline:none;">
-                                <option value="">Select event</option>
+                                <option value="visit" {{ old('status', 'visit') === 'visit' ? 'selected' : '' }}>Visit</option>
+                                <option value="stay" {{ old('status') === 'stay' ? 'selected' : '' }}>Stay</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px;">
+                                Event <span style="color:#9ca3af;font-weight:400;">(optional)</span>
+                            </label>
+                            <select name="event_id" id="event_id"
+                                    style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:10px 14px;font-size:14px;outline:none;">
+                                <option value="">No event</option>
                                 @foreach($events as $event)
-                                    <option value="{{ $event->id }}"
+                                    <option value="{{ $event->id }}" data-date="{{ $event->event_date->format('Y-m-d') }}"
                                         {{ old('event_id', $selectedEvent?->id) == $event->id ? 'selected' : '' }}>
                                         {{ $event->title }} — {{ $event->event_date->format('d M Y') }}
                                         @if($event->status === 'active') ● @endif
@@ -132,5 +154,23 @@
             </div>
         </div>
     </form>
+
+    <script>
+        // Auto-fill the visit date from the selected event (skipped for future-dated events)
+        (function () {
+            const eventSelect = document.getElementById('event_id');
+            const dateInput   = document.getElementById('visited_at');
+
+            function fillDateFromEvent() {
+                const date = eventSelect.selectedOptions[0]?.dataset.date;
+                if (date && date <= dateInput.max) dateInput.value = date;
+            }
+
+            eventSelect.addEventListener('change', fillDateFromEvent);
+            @if(! old('visited_at'))
+            fillDateFromEvent();
+            @endif
+        })();
+    </script>
 
 @endsection

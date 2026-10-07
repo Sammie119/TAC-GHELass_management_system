@@ -43,8 +43,8 @@ class VisitorsExport implements
     public function headings(): array
     {
         return [
-            '#', 'Full Name', 'Phone', 'Email',
-            'Event', 'Event Date', 'Visited At', 'Recorded By', 'Notes',
+            '#', 'Full Name', 'Phone', 'Email', 'Status',
+            'Event', 'Event Date', 'Visit Date', 'Recorded By', 'Notes',
         ];
     }
 
@@ -58,9 +58,10 @@ class VisitorsExport implements
             $row->full_name,
             $row->phone ?? '—',
             $row->email ?? '—',
-            $row->event->title ?? '—',
-            $row->event->event_date->format('d M Y') ?? '—',
-            $row->visited_at->format('d M Y h:i A'),
+            ucfirst($row->status),
+            $row->event?->title ?? '—',
+            $row->event?->event_date?->format('d M Y') ?? '—',
+            $row->visited_at->format('d M Y'),
             $row->recordedBy->name ?? 'System',
             $row->notes ?? '—',
         ];
